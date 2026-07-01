@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Konvey — AI-конструктор для SMB. Настройка CRM, шаблоны сайтов и ботов, маркетплейс интеграций в одном окне." />
+<meta property="og:title" content="Konvey — AI-конструктор для SMB" />
+<meta property="og:description" content="AI настраивает CRM, собирает сайты и ботов, подключает интеграции — за 15 минут, без разработчика." />
+<title>Konvey — демо платформы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {50:'#F5F3FF',100:'#EDE9FE',200:'#DDD6FE',300:'#C4B5FD',400:'#A78BFA',500:'#8B5CF6',600:'#7C3AED',700:'#6D28D9',800:'#5B21B6',900:'#4C1D95'},
+          ink:   {50:'#F8FAFC',100:'#F1F5F9',200:'#E2E8F0',300:'#CBD5E1',400:'#94A3B8',500:'#64748B',600:'#475569',700:'#334155',800:'#1E293B',900:'#0F172A',950:'#020617'}
+        },
+        fontFamily: { sans:['Inter','system-ui','sans-serif'], mono:['JetBrains Mono','ui-monospace','monospace'] },
+        animation: {
+          'fade-in':'fadeIn .25s ease-out',
+          'slide-up':'slideUp .3s ease-out',
+          'pulse-dot':'pulseDot 1.6s ease-in-out infinite',
+          'spin-slow':'spin 3s linear infinite',
+        },
+        keyframes: {
+          fadeIn: {'0%':{opacity:'0'},'100%':{opacity:'1'}},
+          slideUp: {'0%':{opacity:'0',transform:'translateY(8px)'},'100%':{opacity:'1',transform:'translateY(0)'}},
+          pulseDot: {'0%,100%':{opacity:'.4'},'50%':{opacity:'1'}},
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html,body,#app{height:100%}
+  body{font-family:'Inter',system-ui,sans-serif;background:#020617;color:#F1F5F9}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#1E293B;border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:#334155}
+  .grid-bg{background-image:linear-gradient(rgba(124,58,237,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,.06) 1px,transparent 1px);background-size:40px 40px}
+  .glow-violet{box-shadow:0 0 60px -10px rgba(124,58,237,.5)}
+  .gradient-text{background:linear-gradient(135deg,#C4B5FD 0%,#8B5CF6 50%,#7C3AED 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .gradient-mesh{background:radial-gradient(at 20% 10%,rgba(124,58,237,.15) 0px,transparent 50%),radial-gradient(at 80% 50%,rgba(139,92,246,.12) 0px,transparent 50%),radial-gradient(at 50% 100%,rgba(99,102,241,.1) 0px,transparent 50%)}
+  .typing::after{content:'▌';animation:pulseDot 1s steps(2) infinite;margin-left:2px;color:#A78BFA}
+  @keyframes pulseDot{50%{opacity:0}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ICONS  (inline SVG factories)
+// ═══════════════════════════════════════════════════════════════════════════
+const svg = (path, size = 18) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+
+const I = {
+  bot:      (s=18)=>svg(`<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>`, s),
+  sparkles: (s=18)=>svg(`<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>`, s),
+  home:     (s=18)=>svg(`<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><polyline points="9 22 9 12 15 12 15 22"/>`, s),
+  plug:     (s=18)=>svg(`<path d="M12 22v-5"/><path d="M9 7V2"/><path d="M15 7V2"/><path d="M6 13V8h12v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4Z"/>`, s),
+  layout:   (s=18)=>svg(`<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>`, s),
+  rocket:   (s=18)=>svg(`<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09Z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2Z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>`, s),
+  store:    (s=18)=>svg(`<path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/>`, s),
+  card:     (s=18)=>svg(`<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>`, s),
+  scroll:   (s=18)=>svg(`<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-1"/><path d="M8 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2"/><path d="M15 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2"/><path d="M9 11h6"/><path d="M9 15h4"/>`, s),
+  settings: (s=18)=>svg(`<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"/><circle cx="12" cy="12" r="3"/>`, s),
+  send:     (s=18)=>svg(`<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>`, s),
+  check:    (s=18)=>svg(`<polyline points="20 6 9 17 4 12"/>`, s),
+  x:        (s=18)=>svg(`<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`, s),
+  plus:     (s=18)=>svg(`<path d="M5 12h14"/><path d="M12 5v14"/>`, s),
+  arrowR:   (s=18)=>svg(`<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>`, s),
+  chevR:    (s=18)=>svg(`<path d="m9 18 6-6-6-6"/>`, s),
+  chevD:    (s=18)=>svg(`<path d="m6 9 6 6 6-6"/>`, s),
+  zap:      (s=18)=>svg(`<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>`, s),
+  lock:     (s=18)=>svg(`<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>`, s),
+  brain:    (s=18)=>svg(`<path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2a2.5 2.5 0 0 0-2.5 2.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>`, s),
+  shield:   (s=18)=>svg(`<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>`, s),
+  layers:   (s=18)=>svg(`<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>`, s),
+  workflow: (s=18)=>svg(`<rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/>`, s),
+  search:   (s=18)=>svg(`<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>`, s),
+  filter:   (s=18)=>svg(`<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>`, s),
+  trending: (s=18)=>svg(`<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>`, s),
+  alert:    (s=18)=>svg(`<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>`, s),
+  external: (s=18)=>svg(`<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>`, s),
+  message:  (s=18)=>svg(`<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>`, s),
+  bolt:     (s=18)=>svg(`<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>`, s),
+  user:     (s=18)=>svg(`<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>`, s),
+  download: (s=18)=>svg(`<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>`, s),
+  refresh:  (s=18)=>svg(`<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>`, s),
+  eye:      (s=18)=>svg(`<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>`, s),
+  trash:    (s=18)=>svg(`<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>`, s),
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MOCK DATA
+// ═══════════════════════════════════════════════════════════════════════════
+const providers = [
+  { id:'amo',          name:'amoCRM',       color:'#1B6FE3', abbr:'a',   desc:'Подключение по OAuth', popular:true },
+  { id:'bitrix24',     name:'Битрикс24',    color:'#2FC6F6', abbr:'Б24', desc:'OAuth + REST API',     popular:true },
+  { id:'yclients',     name:'Yclients',     color:'#9F44D3', abbr:'Yc',  desc:'API key + webhook',    popular:true },
+  { id:'telegram_bot', name:'Telegram Bot', color:'#0088CC', abbr:'TG',  desc:'Bot token + webhook',  popular:true },
+  { id:'max_bot',      name:'MAX Bot',      color:'#FFCC00', abbr:'MAX', desc:'Bot token + webhook',  popular:false },
+  { id:'whatsapp',     name:'WhatsApp Business', color:'#25D366', abbr:'WA', desc:'Скоро', soon:true },
+  { id:'avito',        name:'Авито',        color:'#00AAFF', abbr:'Ав',  desc:'Скоро', soon:true },
+  { id:'hubspot',      name:'HubSpot',      color:'#FF7A59', abbr:'HS',  desc:'Скоро', soon:true },
+];
+const providerById = id => providers.find(p => p.id === id) || {};
+
+const defaultIntegrations = [
+  { id:'i1', provider:'amo',          name:'Konvey Demo (amoCRM)',  subdomain:'konveydemo.amocrm.ru', status:'connected', lastSync:'2 мин назад', pipelines:3, fields:42 },
+  { id:'i2', provider:'telegram_bot', name:'@konvey_demo_bot',      subdomain:'konvey_demo_bot',      status:'connected', lastSync:'live',        pipelines:0, fields:0 },
+  { id:'i3', provider:'bitrix24',     name:'Битрикс портал',        subdomain:'konvey.bitrix24.ru',   status:'expired',   lastSync:'3 дня назад', pipelines:2, fields:31 },
+];
+
+const templates = [
+  { id:'t1', kind:'site',    name:'Лендинг услуг',       desc:'Hero, услуги, форма заявки → CRM',       tag:'Сайт',    color:'from-amber-500/20 to-orange-500/10',  icon:'layout' },
+  { id:'t2', kind:'miniapp', name:'Каталог товаров',     desc:'TG miniapp с категориями и корзиной',    tag:'Miniapp', color:'from-violet-500/20 to-indigo-500/10', icon:'layers' },
+  { id:'t3', kind:'miniapp', name:'Запись на услугу',    desc:'Календарь, окошки, оплата',              tag:'Miniapp', color:'from-sky-500/20 to-cyan-500/10',      icon:'workflow' },
+  { id:'t4', kind:'bot_tg',  name:'Telegram-бот заявок', desc:'Имя → телефон → задача в CRM',           tag:'TG bot',  color:'from-emerald-500/20 to-teal-500/10',  icon:'bot' },
+  { id:'t5', kind:'bot_tg',  name:'TG-бот FAQ',          desc:'Бот с ответами на частые вопросы',       tag:'TG bot',  color:'from-rose-500/20 to-pink-500/10',     icon:'message' },
+  { id:'t6', kind:'bot_max', name:'MAX-бот записи',      desc:'Бот для MAX с интеграцией Yclients',     tag:'MAX bot', color:'from-yellow-500/20 to-amber-500/10',  icon:'bot' },
+  { id:'t7', kind:'site',    name:'Прайс-лист',          desc:'Категории, фильтр, оставить заявку',     tag:'Сайт',    color:'from-fuchsia-500/20 to-violet-500/10',icon:'layout' },
+  { id:'t8', kind:'miniapp', name:'Программа лояльности',desc:'Бонусы, QR, история покупок',            tag:'Miniapp', color:'from-blue-500/20 to-indigo-500/10',   icon:'sparkles' },
+];
+
+const recipes = [
+  { id:'r1',  name:'amoCRM → Telegram канал',     desc:'Новая сделка в amo → сообщение в TG-канал',          providers:['amo','telegram_bot'], runs:128, status:'popular' },
+  { id:'r2',  name:'TG-бот → amoCRM',              desc:'Заявка из бота создаёт сделку с маппингом полей',    providers:['telegram_bot','amo'], runs:412, status:'popular' },
+  { id:'r3',  name:'Yclients → amoCRM',            desc:'Новая запись = сделка в amo',                         providers:['yclients','amo'],      runs:64,  status:'new' },
+  { id:'r4',  name:'amoCRM ↔ Битрикс24',           desc:'Двусторонняя синхронизация сделок',                   providers:['amo','bitrix24'],      runs:91,  status:'popular' },
+  { id:'r5',  name:'amoCRM → клиенту в TG',        desc:'Изменение статуса → уведомление клиенту',             providers:['amo','telegram_bot'],  runs:203, status:'' },
+  { id:'r6',  name:'Битрикс24 → Yclients',         desc:'Сделка "запись" → запись клиента в Yclients',         providers:['bitrix24','yclients'], runs:18,  status:'new' },
+  { id:'r7',  name:'Yclients no-show → задача',    desc:'Пропущенная запись → задача менеджеру в amo',         providers:['yclients','amo'],      runs:32,  status:'' },
+  { id:'r8',  name:'TG-бот FAQ',                   desc:'Автоответы по вашей базе знаний',                     providers:['telegram_bot'],        runs:74,  status:'' },
+  { id:'r9',  name:'amoCRM звонок → попап',        desc:'Входящий звонок → быстрая карточка клиента',          providers:['amo'],                 runs:147, status:'popular' },
+  { id:'r10', name:'Еженедельный отчёт в TG',      desc:'Сводка по воронкам каждый понедельник 9:00',          providers:['amo','telegram_bot'],  runs:55,  status:'' },
+];
+
+const defaultAuditLog = [
+  { id:'a1', who:'Григорий', action:'apply',          target:'amoCRM: создано поле "Размер обуви"',    when:'14:32',   kind:'mutation' },
+  { id:'a2', who:'AI',       action:'preview',        target:'amoCRM: добавить статус "Согласование"', when:'14:31',   kind:'preview' },
+  { id:'a3', who:'Григорий', action:'oauth',          target:'Подключён amoCRM (konveydemo)',          when:'12:01',   kind:'auth' },
+  { id:'a4', who:'system',   action:'deploy',         target:'Лендинг услуг → mira-studio.konvey.app', when:'вчера 18:44', kind:'deploy' },
+  { id:'a5', who:'recipe',   action:'run',            target:'TG-бот → amoCRM (заявка от @alice)',     when:'вчера 18:01', kind:'recipe' },
+  { id:'a6', who:'Григорий', action:'install_recipe', target:'Установлен "amoCRM → Telegram канал"',   when:'2 дня назад', kind:'recipe' },
+  { id:'a7', who:'recipe',   action:'failed',         target:'Битрикс24 sync: 401 expired token',      when:'3 дня назад', kind:'error' },
+  { id:'a8', who:'Григорий', action:'plan_upgrade',   target:'Free → Pro подписка оформлена',          when:'неделю назад', kind:'billing' },
+];
+
+const initialChatMessages = [
+  { id:1, role:'user',      content:'Привет! Помоги настроить amoCRM под услуги фотостудии. Нужна воронка для съёмок и поле "Размер обуви" в контактах.' },
+  { id:2, role:'assistant', content:'Понял. Сначала прочитаю текущую структуру твоего amoCRM, потом предложу план.', tools:[
+    { name:'crm.list_pipelines', result:'3 воронки: "Продажи", "Сервис", "Партнёры"', ok:true },
+    { name:'crm.list_fields', args:'entity=contact', result:'14 полей (имя, телефон, email, ...)', ok:true },
+  ]},
+  { id:3, role:'assistant', content:'У тебя уже есть воронка "Продажи" с 5 статусами. Для фотостудии предлагаю:\n\n1. Создать новую воронку "Съёмки" со статусами: «Заявка → Подбор даты → Бронь → Съёмка → Постпродакшен → Закрыто».\n2. В контактах добавить поле "Размер обуви" (число).\n3. Опционально: поле "Тип съёмки" (select: портрет/семья/предметная/love story).\n\nПоказать diff?' },
+  { id:4, role:'user',      content:'Да, и сразу добавь тип съёмки' },
+  { id:5, role:'assistant', content:'Готовлю план мутаций. Ничего не применится без твоего Apply.', actions:[
+    { id:'mut1', tool:'crm.plan_create_pipeline', title:'Создать воронку "Съёмки"',
+      diff:{ before:null, after:{ name:'Съёмки', statuses:[
+        {name:'Заявка',color:'#94A3B8'},{name:'Подбор даты',color:'#7C3AED'},{name:'Бронь',color:'#0EA5E9'},
+        {name:'Съёмка',color:'#F59E0B'},{name:'Постпродакшен',color:'#10B981'},{name:'Закрыто (успех)',color:'#22C55E'},{name:'Закрыто (отказ)',color:'#EF4444'}] } } },
+    { id:'mut2', tool:'crm.plan_create_field', title:'Поле "Размер обуви" (контакты)',
+      diff:{ before:null, after:{ entity:'contact', name:'Размер обуви', type:'number', required:false } } },
+    { id:'mut3', tool:'crm.plan_create_field', title:'Поле "Тип съёмки" (сделки)',
+      diff:{ before:null, after:{ entity:'lead', name:'Тип съёмки', type:'select', options:['Портрет','Семья','Предметная','Love story'] } } },
+  ]},
+];
+
+const deployments = [
+  { id:'d1', template:'Лендинг услуг',       url:'mira-studio.konvey.app',  status:'live',  leads:12, updated:'вчера' },
+  { id:'d2', template:'Telegram-бот заявок', url:'@mira_studio_bot',         status:'live',  leads:34, updated:'2 дня назад' },
+  { id:'d3', template:'Каталог товаров',     url:'shop.konvey.app',          status:'draft', leads:0,  updated:'сегодня' },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STATE  (with localStorage persistence)
+// ═══════════════════════════════════════════════════════════════════════════
+const LS_KEY = 'konvey_demo_state_v1';
+
+const defaultState = () => ({
+  view: 'landing',
+  chat: {
+    sessionId: 1,
+    messages: JSON.parse(JSON.stringify(initialChatMessages)),
+    applied: {},            // { actionId: 'applied' | 'rejected' }
+    typing: false,
+    nextId: 100,
+  },
+  integrations: {
+    modalOpen: false,
+    list: JSON.parse(JSON.stringify(defaultIntegrations)),
+  },
+  templates: { filter: 'all' },
+  builder: {
+    config: {
+      brand: { name:'Mira Studio', primaryColor:'#7C3AED' },
+      hero:  { title:'Фотостудия в центре Москвы', subtitle:'Студийная и outdoor-съёмка' },
+      services: ['Портрет','Семья','Love story','Lookbook'],
+      cta: 'Записаться',
+    },
+    busy: false,
+  },
+  marketplace: { installing: null, step: 1, installed: [] },
+  audit: { tab: 'all', log: JSON.parse(JSON.stringify(defaultAuditLog)) },
+  deploySim: null,   // { step, botName, greeting } — for bot simulator
+});
+
+let state;
+
+function loadState() {
+  try {
+    const s = localStorage.getItem(LS_KEY);
+    if (s) {
+      const p = JSON.parse(s);
+      state = { ...defaultState(), ...p };
+      state.chat.typing = false;   // never persist transient flags
+    } else {
+      state = defaultState();
+    }
+  } catch (e) {
+    console.warn('State load failed:', e);
+    state = defaultState();
+  }
+}
+
+function saveState() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  catch (e) { /* ignore */ }
+}
+
+function resetState() {
+  localStorage.removeItem(LS_KEY);
+  state = defaultState();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+const cx = (...xs) => xs.filter(Boolean).join(' ');
+const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => (typeof n === 'number' ? n.toLocaleString('ru-RU') : n);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  UI PRIMITIVES  (return HTML strings)
+// ═══════════════════════════════════════════════════════════════════════════
+function Button({ variant='primary', size='md', children, action, arg, className='', type='button', disabled=false }) {
+  const sizes = { sm:'h-8 px-3 text-xs', md:'h-10 px-4 text-sm', lg:'h-12 px-6 text-base' };
+  const variants = {
+    primary:  'bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-brand-900/40',
+    ghost:    'bg-transparent hover:bg-ink-800 text-ink-100',
+    outline:  'border border-ink-700 hover:border-ink-500 hover:bg-ink-800/50 text-ink-100',
+    danger:   'bg-rose-600 hover:bg-rose-500 text-white',
+    success:  'bg-emerald-600 hover:bg-emerald-500 text-white',
+    soft:     'bg-brand-600/10 hover:bg-brand-600/20 text-brand-300 border border-brand-600/30',
+  };
+  const attrs = [
+    action ? `data-action="${esc(action)}"` : '',
+    arg    ? `data-arg="${esc(arg)}"`       : '',
+    disabled ? 'disabled' : '',
+    `type="${type}"`
+  ].filter(Boolean).join(' ');
+  return `<button ${attrs} class="inline-flex items-center gap-2 rounded-lg font-medium transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${sizes[size]} ${variants[variant]} ${className}">${children}</button>`;
+}
+
+function Badge({ color='gray', children, className='' }) {
+  const colors = {
+    gray:   'bg-ink-800 text-ink-300 border-ink-700',
+    violet: 'bg-brand-600/10 text-brand-300 border-brand-600/30',
+    green:  'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+    yellow: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+    red:    'bg-rose-500/10 text-rose-400 border-rose-500/30',
+    blue:   'bg-sky-500/10 text-sky-400 border-sky-500/30',
+  };
+  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border ${colors[color]} ${className}">${children}</span>`;
+}
+
+function Card({ children, className='', hover=false }) {
+  return `<div class="rounded-xl border border-ink-800 bg-ink-900/50 backdrop-blur ${hover?'hover:border-ink-700 hover:bg-ink-900/80 transition':''} ${className}">${children}</div>`;
+}
+
+function ProgressBar({ value, max=100, color='violet' }) {
+  const pct = Math.min(100, Math.round((value / max) * 100));
+  const colors = { violet:'bg-brand-500', green:'bg-emerald-500', yellow:'bg-amber-500', red:'bg-rose-500' };
+  return `<div class="h-1.5 w-full rounded-full bg-ink-800 overflow-hidden"><div class="h-full rounded-full transition-all ${colors[color]}" style="width:${pct}%"></div></div>`;
+}
+
+function ProviderLogo({ providerId, size=28 }) {
+  const p = providerById(providerId);
+  return `<div class="rounded-md flex items-center justify-center text-white font-bold text-[10px] tracking-wider shadow" style="width:${size}px;height:${size}px;background:${p.color}">${esc(p.abbr)}</div>`;
+}
+
+function Modal({ children, size='md' }) {
+  const sizes = { sm:'max-w-md', md:'max-w-xl', lg:'max-w-3xl', xl:'max-w-5xl' };
+  return `<div class="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div class="absolute inset-0 bg-ink-950/80 backdrop-blur-sm" data-action="closeAllModals"></div>
+    <div class="relative w-full ${sizes[size]} bg-ink-900 border border-ink-700 rounded-2xl shadow-2xl animate-slide-up max-h-[90vh] overflow-auto">${children}</div>
+  </div>`;
+}
+
+function Logo(size='md') {
+  const big = size === 'lg';
+  return `<div class="flex items-center gap-2">
+    <div class="rounded-lg bg-gradient-to-br from-brand-400 via-brand-600 to-indigo-700 flex items-center justify-center text-white font-black glow-violet ${big?'h-10 w-10 text-lg':'h-8 w-8 text-sm'}">K</div>
+    <div class="font-bold tracking-tight ${big?'text-2xl':'text-base'}">Konvey</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  LAYOUT: Sidebar + TopBar
+// ═══════════════════════════════════════════════════════════════════════════
+const navItems = [
+  { id:'dashboard',    label:'Главная',       icon:'home' },
+  { id:'chat',         label:'AI-настройщик', icon:'sparkles', badge:'AI' },
+  { id:'integrations', label:'Интеграции',    icon:'plug' },
+  { id:'templates',    label:'Шаблоны',       icon:'layout' },
+  { id:'deployments',  label:'Деплои',        icon:'rocket' },
+  { id:'marketplace',  label:'Маркетплейс',   icon:'store' },
+  { id:'billing',      label:'Биллинг',       icon:'card' },
+  { id:'audit',        label:'Журнал',        icon:'scroll' },
+  { id:'settings',     label:'Настройки',     icon:'settings' },
+];
+
+function Sidebar() {
+  const active = state.view;
+  return `<aside class="w-64 shrink-0 border-r border-ink-800 bg-ink-950/60 flex flex-col">
+    <div class="h-16 px-4 flex items-center border-b border-ink-800">
+      <button data-action="go" data-arg="landing">${Logo()}</button>
+    </div>
+    <div class="px-3 py-4">
+      ${Button({ variant:'primary', size:'md', className:'w-full justify-center', action:'newChatSession',
+        children:`${I.plus(16)} Новый чат с AI` })}
+    </div>
+    <nav class="px-2 flex-1 space-y-0.5">
+      ${navItems.map(it => `
+        <button data-action="go" data-arg="${it.id}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${active===it.id?'bg-brand-600/15 text-brand-200':'text-ink-300 hover:bg-ink-800/50 hover:text-ink-100'}">
+          <span class="${active===it.id?'text-brand-300':''}">${I[it.icon](18)}</span>
+          <span class="flex-1 text-left">${it.label}</span>
+          ${it.badge?Badge({color:'violet',className:'text-[9px]',children:it.badge}):''}
+        </button>
+      `).join('')}
+    </nav>
+    <div class="p-3 border-t border-ink-800">
+      ${Card({ className:'p-3', children:`
+        <div class="flex items-center gap-2 text-xs text-ink-400 mb-2">${I.zap(14).replace('<svg','<svg class="text-amber-400"')} Pro план</div>
+        <div class="text-xs text-ink-500 mb-1">AI-сообщений: 1242 / 5000</div>
+        ${ProgressBar({ value:1242, max:5000 })}
+      `})}
+    </div>
+  </aside>`;
+}
+
+const screenMeta = {
+  dashboard:    { title:'Главная',       subtitle:'Обзор workspace Konvey Demo' },
+  chat:         { title:'AI-настройщик', subtitle:'Чат с Claude Sonnet 4.6 над твоей CRM (scripted-режим в этом демо)' },
+  integrations: { title:'Интеграции',    subtitle:'Управление подключёнными системами' },
+  templates:    { title:'Шаблоны',       subtitle:'Каталог готовых сайтов, miniapp и ботов' },
+  builder:      { title:'Конструктор',   subtitle:'AI кастомизирует конфиг, live preview' },
+  deployments:  { title:'Деплои',        subtitle:'Запущенные сайты, miniapp, боты' },
+  marketplace:  { title:'Маркетплейс',   subtitle:'Готовые сценарии автоматизации' },
+  billing:      { title:'Биллинг',       subtitle:'Подписка, лимиты, история платежей' },
+  audit:        { title:'Журнал',        subtitle:'Полная история событий workspace' },
+  settings:     { title:'Настройки',     subtitle:'Workspace, безопасность, команда' },
+};
+
+function TopBar() {
+  const m = screenMeta[state.view] || screenMeta.dashboard;
+  return `<header class="h-16 px-6 border-b border-ink-800 bg-ink-950/40 backdrop-blur flex items-center justify-between sticky top-0 z-10">
+    <div>
+      <h1 class="text-base font-semibold text-ink-50">${esc(m.title)}</h1>
+      <div class="text-xs text-ink-500 mt-0.5">${esc(m.subtitle)}</div>
+    </div>
+    <div class="flex items-center gap-3">
+      ${state.view!=='chat' ? Button({variant:'outline',size:'sm',action:'go',arg:'chat',children:`${I.sparkles(14)} Спросить AI`}) : ''}
+      <div class="flex items-center gap-3 pl-3 border-l border-ink-800">
+        <div class="text-right hidden md:block">
+          <div class="text-sm font-medium">Григорий</div>
+          <div class="text-xs text-ink-500">Workspace: Konvey Demo</div>
+        </div>
+        <div class="h-9 w-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center font-bold text-sm shadow-lg">Г</div>
+      </div>
+    </div>
+  </header>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: LANDING
+// ═══════════════════════════════════════════════════════════════════════════
+function renderLanding() {
+  return `<div class="min-h-screen text-ink-100">
+    <div class="border-b border-ink-800 backdrop-blur bg-ink-950/70 sticky top-0 z-20">
+      <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        ${Logo()}
+        <nav class="hidden md:flex items-center gap-6 text-sm text-ink-300">
+          <a class="hover:text-ink-50 cursor-pointer">Возможности</a>
+          <a class="hover:text-ink-50 cursor-pointer">Шаблоны</a>
+          <a class="hover:text-ink-50 cursor-pointer">Маркетплейс</a>
+          <a class="hover:text-ink-50 cursor-pointer">Тарифы</a>
+          <a class="hover:text-ink-50 cursor-pointer">Документация</a>
+        </nav>
+        <div class="flex items-center gap-2">
+          ${Button({variant:'ghost',size:'sm',children:'Войти'})}
+          ${Button({variant:'primary',size:'sm',action:'go',arg:'dashboard',children:`Открыть кабинет ${I.arrowR(14)}`})}
+        </div>
+      </div>
+    </div>
+
+    <section class="relative overflow-hidden border-b border-ink-800">
+      <div class="absolute inset-0 grid-bg opacity-30"></div>
+      <div class="absolute inset-0 gradient-mesh"></div>
+      <div class="relative max-w-7xl mx-auto px-6 py-24 md:py-32 text-center">
+        ${Badge({color:'violet',className:'mb-6',children:`${I.sparkles(11)} Бета · Claude Sonnet 4.6 на борту`})}
+        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight mb-6">
+          Твой бизнес. <span class="gradient-text">Без интегратора.</span>
+        </h1>
+        <p class="text-lg md:text-xl text-ink-300 max-w-2xl mx-auto mb-10">
+          AI настраивает твою CRM, собирает сайты, мини-приложения и ботов. За 15 минут. Без кода и менеджеров проекта.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
+          ${Button({variant:'primary',size:'lg',action:'go',arg:'dashboard',children:`Попробовать бесплатно ${I.arrowR(16)}`})}
+          ${Button({variant:'outline',size:'lg',action:'go',arg:'chat',children:`${I.eye(16)} Посмотреть демо`})}
+        </div>
+        <div class="flex flex-wrap justify-center gap-x-8 gap-y-3 text-xs text-ink-400">
+          <span class="flex items-center gap-1.5">${I.check(14).replace('<svg','<svg class="text-emerald-400"')} Без карты на старте</span>
+          <span class="flex items-center gap-1.5">${I.check(14).replace('<svg','<svg class="text-emerald-400"')} 14 дней Pro в подарок</span>
+          <span class="flex items-center gap-1.5">${I.check(14).replace('<svg','<svg class="text-emerald-400"')} Подключение за 2 минуты</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="border-b border-ink-800">
+      <div class="max-w-7xl mx-auto px-6 py-20">
+        <div class="text-center mb-14">
+          ${Badge({color:'gray',className:'mb-3',children:'Как это работает'})}
+          <h2 class="text-3xl md:text-4xl font-bold">Три шага, и у тебя готовое решение</h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          ${[
+            {n:'01',t:'Подключи свою CRM',d:'amoCRM, Битрикс24 или Yclients — OAuth в один клик. AI читает структуру: воронки, поля, статусы.'},
+            {n:'02',t:'Опиши что нужно',d:'"Настрой воронку под фитнес-клуб", "сделай TG-бот для записи". AI предложит план и покажет diff перед изменением.'},
+            {n:'03',t:'Применяй и расти',d:'Один клик "Apply" — изменения уходят в CRM, бот деплоится. Маркетплейс добавит автоматизации в 2 клика.'},
+          ].map(s => Card({className:'p-6 relative',children:`
+            <div class="text-5xl font-black text-brand-600/30 mb-3">${s.n}</div>
+            <h3 class="text-lg font-semibold mb-2">${s.t}</h3>
+            <p class="text-sm text-ink-400 leading-relaxed">${s.d}</p>
+          `})).join('')}
+        </div>
+      </div>
+    </section>
+
+    <section class="border-b border-ink-800">
+      <div class="max-w-7xl mx-auto px-6 py-20">
+        <div class="text-center mb-14">
+          ${Badge({color:'gray',className:'mb-3',children:'Возможности'})}
+          <h2 class="text-3xl md:text-4xl font-bold mb-3">Один продукт вместо команды</h2>
+          <p class="text-ink-400 max-w-2xl mx-auto">Раньше: интегратор + дизайнер + бот-мейкер + копирайтер. Теперь: одно окно.</p>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          ${[
+            {i:'brain',   t:'AI-настройщик CRM',    d:'Диалог с моделью, которая видит твои воронки и поля. Изменения только после твоего Apply.'},
+            {i:'layout',  t:'Шаблоны без кода',     d:'10+ готовых лендингов, миниапп и ботов. AI кастомизирует под твой бизнес за минуту.'},
+            {i:'workflow',t:'Маркетплейс рецептов', d:'TG↔amo, Yclients→Битрикс, amo↔Битрикс — десятки готовых сценариев, ставятся в 2 клика.'},
+            {i:'bot',     t:'Telegram + MAX боты', d:'Декларативные flow, наш runtime. Боты живут на нашем хостинге, токен — твой.'},
+            {i:'shield',  t:'Безопасность',        d:'Шифрование токенов at-rest, RLS, аудит-журнал каждого действия. SOC2-ready.'},
+            {i:'layers',  t:'Один источник правды',d:'Все интеграции в одном workspace. AI видит всю картину и не дублирует данные.'},
+          ].map(f => Card({hover:true,className:'p-6',children:`
+            <div class="h-10 w-10 rounded-lg bg-brand-600/10 border border-brand-600/30 flex items-center justify-center text-brand-300 mb-4">${I[f.i](20)}</div>
+            <h3 class="font-semibold mb-1.5">${f.t}</h3>
+            <p class="text-sm text-ink-400 leading-relaxed">${f.d}</p>
+          `})).join('')}
+        </div>
+      </div>
+    </section>
+
+    <section class="border-b border-ink-800">
+      <div class="max-w-7xl mx-auto px-6 py-20">
+        <div class="text-center mb-14">
+          ${Badge({color:'gray',className:'mb-3',children:'Тарифы'})}
+          <h2 class="text-3xl md:text-4xl font-bold mb-2">Платишь только за то, что используешь</h2>
+          <p class="text-ink-400">Никаких скрытых платежей. Отмена в один клик.</p>
+        </div>
+        <div class="grid md:grid-cols-4 gap-4">
+          ${[
+            {name:'Free',    price:'0',      period:'/мес',  desc:'Попробовать без обязательств', items:['50 AI-сообщений','1 deployment','1 CRM-интеграция','Хостинг на нашем домене'], variant:'outline'},
+            {name:'Starter', price:'2 990',  period:'₽/мес', desc:'Малый бизнес, один продукт',   items:['500 AI-сообщений','3 deployments','2 CRM-интеграции','Email-поддержка'], variant:'outline'},
+            {name:'Pro',     price:'7 900',  period:'₽/мес', desc:'Топ-выбор для средней компании', items:['5 000 AI-сообщений','10 deployments','5 CRM-интеграций','Кастомный домен','Приоритетная поддержка'], variant:'primary', popular:true},
+            {name:'Business',price:'от 24 900',period:'₽/мес',desc:'Команды и интеграторы',       items:['50 000 AI-сообщений','Unlimited deployments','Unlimited CRM','White-label','Менеджер и SLA'], variant:'outline'},
+          ].map(p => Card({className:`p-6 relative ${p.popular?'border-brand-500/50 bg-brand-600/5':''}`,children:`
+            ${p.popular?Badge({color:'violet',className:'absolute top-3 right-3',children:'Топ выбор'}):''}
+            <div class="text-sm text-ink-400 mb-1">${p.name}</div>
+            <div class="flex items-baseline gap-1 mb-1">
+              <div class="text-3xl font-bold">${p.price}</div>
+              <div class="text-sm text-ink-500">${p.period}</div>
+            </div>
+            <div class="text-xs text-ink-400 mb-5">${p.desc}</div>
+            ${Button({variant:p.variant,size:'md',className:'w-full justify-center mb-5',action:'go',arg:'dashboard',children:p.name==='Free'?'Начать бесплатно':'Выбрать'})}
+            <ul class="space-y-2 text-sm text-ink-300">
+              ${p.items.map(it => `<li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5 shrink-0">${I.check(16)}</span><span>${it}</span></li>`).join('')}
+            </ul>
+          `})).join('')}
+        </div>
+      </div>
+    </section>
+
+    <section class="border-b border-ink-800">
+      <div class="max-w-5xl mx-auto px-6 py-20">
+        <div class="text-center mb-10">
+          ${Badge({color:'gray',className:'mb-3',children:'FAQ'})}
+          <h2 class="text-3xl md:text-4xl font-bold">Частые вопросы</h2>
+        </div>
+        <div class="space-y-3">
+          ${[
+            {q:'AI делает изменения в моей CRM сразу?',a:'Нет. Любая мутация сначала показывается как diff (что было / что станет), и применяется только по твоему "Apply". Журнал хранит все действия.'},
+            {q:'Что с безопасностью токенов?',a:'OAuth-токены шифруются envelope-схемой (KEK + DEK), хранятся в Supabase Vault. Расшифровка только на сервере при вызове tool через connector framework.'},
+            {q:'Можно использовать свой домен?',a:'Да, на Pro и выше. Добавляешь CNAME, мы автоматически выпускаем SSL.'},
+            {q:'Что если AI ошибётся?',a:'Confirmation gate + журнал + откат. Никакая мутация не уйдёт в твою CRM без явного подтверждения.'},
+            {q:'А если вы пропадёте?',a:'Все твои данные экспортируются по запросу. Шаблоны — open-config (JSON), боты восстановимы из конфига.'},
+          ].map(it => Card({className:'p-5',children:`
+            <div class="font-medium mb-1">${it.q}</div>
+            <div class="text-sm text-ink-400">${it.a}</div>
+          `})).join('')}
+        </div>
+      </div>
+    </section>
+
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0 gradient-mesh"></div>
+      <div class="relative max-w-4xl mx-auto px-6 py-20 text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Готов попробовать?</h2>
+        <p class="text-ink-300 mb-8">Регистрация занимает минуту. Кредитка не нужна.</p>
+        ${Button({variant:'primary',size:'lg',action:'go',arg:'dashboard',children:`Открыть кабинет ${I.arrowR(16)}`})}
+      </div>
+    </section>
+
+    <footer class="border-t border-ink-800 py-10 text-sm text-ink-500">
+      <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between gap-4">
+        <div class="flex items-center gap-3">${Logo()}<span class="text-xs">© 2026 Konvey</span></div>
+        <div class="flex gap-6">
+          <a class="hover:text-ink-300 cursor-pointer">Документация</a>
+          <a class="hover:text-ink-300 cursor-pointer">Политика</a>
+          <a class="hover:text-ink-300 cursor-pointer">Оферта</a>
+          <a class="hover:text-ink-300 cursor-pointer">Поддержка</a>
+        </div>
+      </div>
+    </footer>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const appliedCount = Object.values(state.chat.applied).filter(v => v==='applied').length;
+  const steps = [
+    { done:true,  t:'Создан workspace', s:'Konvey Demo' },
+    { done:true,  t:'Подключена первая CRM', s:'amoCRM (konveydemo)' },
+    { done:appliedCount>0, t:'Первый диалог с AI', s: appliedCount>0 ? `Применено мутаций: ${appliedCount}` : 'Задай вопрос и нажми Apply' },
+    { done:state.marketplace.installed.length>0, t:'Развернуть первый шаблон', s:'Выбери из 8 шаблонов', cta:'templates' },
+    { done:state.marketplace.installed.length>0, t:'Установить первый рецепт', s:'Автоматизация в 2 клика', cta:'marketplace' },
+  ];
+  const doneCnt = steps.filter(s => s.done).length;
+
+  return `<div class="p-6 space-y-6 animate-fade-in">
+    <div class="grid md:grid-cols-3 gap-4">
+      ${Card({className:'p-5',children:`
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-sm text-ink-400">AI-сообщений за месяц</div>
+          <span class="text-brand-400">${I.sparkles(16)}</span>
+        </div>
+        <div class="text-3xl font-bold">1 242</div>
+        <div class="text-xs text-ink-500 mt-1">из 5 000 лимита</div>
+        <div class="mt-3">${ProgressBar({value:1242,max:5000})}</div>
+      `})}
+      ${Card({className:'p-5',children:`
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-sm text-ink-400">Активных deployments</div>
+          <span class="text-emerald-400">${I.rocket(16)}</span>
+        </div>
+        <div class="text-3xl font-bold">3</div>
+        <div class="text-xs text-emerald-400 mt-1 flex items-center gap-1">${I.trending(12)} +2 за неделю</div>
+      `})}
+      ${Card({className:'p-5',children:`
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-sm text-ink-400">Лидов через Konvey</div>
+          <span class="text-sky-400">${I.user(16)}</span>
+        </div>
+        <div class="text-3xl font-bold">46</div>
+        <div class="text-xs text-emerald-400 mt-1 flex items-center gap-1">${I.trending(12)} +12 за неделю</div>
+      `})}
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+      ${Card({className:'p-6 lg:col-span-2',children:`
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold">Быстрый старт</h3>
+          ${Badge({color:'violet',children:`${doneCnt} из ${steps.length} шагов`})}
+        </div>
+        <div class="space-y-2">
+          ${steps.map((s,i) => `<div class="flex items-center gap-3 p-3 rounded-lg ${s.done?'bg-emerald-500/5':'bg-ink-800/40'}">
+            <div class="h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${s.done?'bg-emerald-500/20 text-emerald-400':'border border-ink-700 text-ink-500'}">
+              ${s.done?I.check(14):`<span class="text-xs">${i+1}</span>`}
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium ${s.done?'text-ink-400 line-through':''}">${s.t}</div>
+              <div class="text-xs text-ink-500">${s.s}</div>
+            </div>
+            ${!s.done && s.cta ? Button({size:'sm',variant:'soft',action:'go',arg:s.cta,children:'Открыть'}) : ''}
+          </div>`).join('')}
+        </div>
+      `})}
+
+      ${Card({className:'p-6',children:`
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold">Недавняя активность</h3>
+          ${Button({size:'sm',variant:'ghost',action:'go',arg:'audit',children:`Все ${I.chevR(12)}`})}
+        </div>
+        <div class="space-y-3">
+          ${state.audit.log.slice(0,5).map(a => `<div class="flex items-start gap-3">
+            <div class="h-7 w-7 rounded-md shrink-0 flex items-center justify-center ${
+              a.kind==='error'?'bg-rose-500/15 text-rose-400':
+              a.kind==='mutation'?'bg-brand-600/15 text-brand-300':
+              'bg-ink-800 text-ink-400'}">
+              ${{'mutation':I.bolt(14),'error':I.alert(14),'recipe':I.workflow(14),'deploy':I.rocket(14),'auth':I.plug(14),'preview':I.sparkles(14),'billing':I.card(14)}[a.kind] || I.bolt(14)}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm truncate">${esc(a.target)}</div>
+              <div class="text-xs text-ink-500">${esc(a.who)} · ${esc(a.when)}</div>
+            </div>
+          </div>`).join('')}
+        </div>
+      `})}
+    </div>
+
+    ${Card({className:'p-6',children:`
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold">Подключённые интеграции</h3>
+        ${Button({size:'sm',variant:'outline',action:'go',arg:'integrations',children:'Управление'})}
+      </div>
+      <div class="grid md:grid-cols-3 gap-3">
+        ${state.integrations.list.map(i => `<div class="flex items-center gap-3 p-3 rounded-lg border border-ink-800">
+          ${ProviderLogo({providerId:i.provider})}
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium truncate">${esc(i.name)}</div>
+            <div class="text-xs text-ink-500">${esc(i.lastSync)}</div>
+          </div>
+          ${Badge({color:i.status==='connected'?'green':'red',children:i.status==='connected'?'OK':'Истёк'})}
+        </div>`).join('')}
+      </div>
+    `})}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: AI CHAT with scripted intelligence
+// ═══════════════════════════════════════════════════════════════════════════
+function renderChat() {
+  const { messages, typing } = state.chat;
+  const sessions = [
+    { t:'Настройка amoCRM фотостудии', a:'сейчас', active:true },
+    { t:'Воронка для онлайн-курсов',   a:'вчера' },
+    { t:'Бот записи в барбершоп',       a:'3 дня назад' },
+    { t:'Импорт лидов из Yclients',    a:'неделю назад' },
+  ];
+  const suggestions = ['Покажи статистику', 'Добавь тег "VIP"', 'Создай задачу', 'Настрой напоминание менеджеру'];
+
+  return `<div class="flex h-[calc(100vh-4rem)]">
+    <div class="w-64 border-r border-ink-800 bg-ink-950/40 flex flex-col">
+      <div class="p-3 border-b border-ink-800">
+        ${Button({variant:'primary',size:'md',className:'w-full justify-center',action:'newChatSession',children:`${I.plus(14)} Новая сессия`})}
+      </div>
+      <div class="flex-1 overflow-auto p-2 space-y-1">
+        ${sessions.map(s => `<button class="w-full text-left p-3 rounded-lg text-sm transition ${s.active?'bg-brand-600/15 border border-brand-600/30':'hover:bg-ink-800/40'}">
+          <div class="font-medium truncate text-ink-100">${s.t}</div>
+          <div class="text-xs text-ink-500 mt-0.5">${s.a}</div>
+        </button>`).join('')}
+      </div>
+      <div class="p-3 border-t border-ink-800 text-xs text-ink-500 space-y-1">
+        <div class="flex justify-between"><span>Контекст:</span><span class="text-ink-300">amoCRM, Битрикс24</span></div>
+        <div class="flex justify-between"><span>Модель:</span><span class="text-ink-300">Sonnet 4.6 (scripted в демо)</span></div>
+      </div>
+    </div>
+
+    <div class="flex-1 flex flex-col">
+      <div id="chat-scroll" class="flex-1 overflow-auto p-6 space-y-6">
+        ${messages.map(renderChatMessage).join('')}
+        ${typing ? `<div class="flex gap-3 animate-fade-in">
+          <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-white">${I.sparkles(14)}</div>
+          <div class="text-sm text-ink-400 typing pt-1">Думаю</div>
+        </div>` : ''}
+      </div>
+      <div class="border-t border-ink-800 p-4">
+        <div class="max-w-4xl mx-auto">
+          <div class="flex gap-2 mb-2 flex-wrap">
+            ${suggestions.map(s => `<button data-action="setChatInputAndFocus" data-arg="${esc(s)}" class="text-xs px-2.5 py-1 rounded-full border border-ink-700 hover:border-ink-500 hover:bg-ink-800 text-ink-400">${s}</button>`).join('')}
+          </div>
+          <form data-action="sendChatMessageForm" class="flex gap-2 items-end border border-ink-700 rounded-2xl bg-ink-900 p-2 focus-within:border-brand-500 transition">
+            <textarea id="chat-input" rows="1" placeholder="Опиши, что нужно настроить или сделать..."
+              class="flex-1 bg-transparent outline-none resize-none px-2 py-2 text-sm text-ink-50 placeholder:text-ink-500"></textarea>
+            ${Button({variant:'primary',size:'md',type:'submit',children:`${I.send(14)} Отправить`})}
+          </form>
+          <div class="text-[11px] text-ink-500 mt-2 flex items-center gap-3">
+            <span class="flex items-center gap-1">${I.shield(11)} Изменения только после Apply</span>
+            <span class="flex items-center gap-1">${I.zap(11)} Использовано: 1242 / 5000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderChatMessage(msg) {
+  if (msg.role === 'user') return `<div class="flex justify-end animate-slide-up">
+    <div class="max-w-2xl bg-brand-600/20 border border-brand-600/30 rounded-2xl rounded-tr-sm px-4 py-3 text-sm whitespace-pre-line">${esc(msg.content)}</div>
+  </div>`;
+
+  return `<div class="flex gap-3 animate-slide-up">
+    <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-700 shrink-0 flex items-center justify-center font-bold text-white shadow-lg">${I.sparkles(14)}</div>
+    <div class="flex-1 space-y-3">
+      <div class="text-sm whitespace-pre-line text-ink-100">${esc(msg.content)}</div>
+      ${msg.tools ? `<div class="space-y-1.5">
+        ${msg.tools.map(t => `<div class="flex items-center gap-2 text-xs font-mono text-ink-400 bg-ink-900/60 border border-ink-800 rounded-md px-3 py-1.5">
+          <span class="text-emerald-400">${I.bolt(12)}</span>
+          <span class="text-emerald-400">${esc(t.name)}</span>
+          ${t.args?`<span class="text-ink-500">(${esc(t.args)})</span>`:''}
+          <span class="text-ink-500">→</span>
+          <span class="text-ink-300">${esc(t.result)}</span>
+        </div>`).join('')}
+      </div>` : ''}
+      ${msg.actions ? renderActionsCard(msg.actions) : ''}
+    </div>
+  </div>`;
+}
+
+function renderActionsCard(actions) {
+  return `<div class="rounded-xl border border-brand-600/30 bg-brand-600/5 overflow-hidden">
+    <div class="px-4 py-3 border-b border-brand-600/20 flex items-center gap-2 text-sm">
+      ${I.sparkles(14).replace('<svg','<svg class="text-brand-300"')}
+      <span class="font-medium">Preview: ${actions.length} мутаций</span>
+      ${Badge({color:'yellow',className:'ml-auto',children:'Ожидает Apply'})}
+    </div>
+    <div class="divide-y divide-ink-800">
+      ${actions.map(act => {
+        const status = state.chat.applied[act.id];
+        return `<div class="p-4">
+          <div class="flex items-start gap-3">
+            <div class="text-xs font-mono px-2 py-0.5 bg-ink-900 border border-ink-800 rounded text-ink-400 shrink-0 mt-0.5">${esc(act.tool)}</div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium mb-2">${esc(act.title)}</div>
+              <div class="rounded-lg border border-ink-800 bg-ink-950/50 p-3 text-xs font-mono">
+                <div class="text-rose-400/70 mb-1">- before: ${esc(JSON.stringify(act.diff.before))}</div>
+                <div class="text-emerald-400 whitespace-pre-wrap">+ after:  ${esc(JSON.stringify(act.diff.after, null, 2))}</div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center justify-end gap-2">
+            ${status==='applied' ? Badge({color:'green',children:`${I.check(11)} Применено`}) : ''}
+            ${status==='rejected' ? Badge({color:'red',children:`${I.x(11)} Отклонено`}) : ''}
+            ${!status ? `
+              ${Button({size:'sm',variant:'ghost',action:'rejectMutation',arg:act.id,children:'Отклонить'})}
+              ${Button({size:'sm',variant:'primary',action:'applyMutation',arg:act.id,children:`${I.check(14)} Apply`})}
+            ` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Scripted AI — pattern-matcher that produces messages + tool calls + diffs
+// ═══════════════════════════════════════════════════════════════════════════
+function scriptedAIResponse(text) {
+  const t = text.toLowerCase().trim();
+  const nid = () => 'm' + (++state.chat.nextId);
+  const aid = () => 'a' + (++state.chat.nextId);
+
+  // "статус" pattern → создать новый статус в воронке
+  if (/статус|этап/i.test(t) && !/удали|переименуй/i.test(t)) {
+    const match = t.match(/["«"']([^"»"']+)["»"']/);
+    const statusName = match ? match[1] : 'Новый статус';
+    return [
+      { id:nid(), role:'assistant', content:`Хорошо, добавлю статус «${statusName}» в воронку «Продажи». Ниже — план изменений, применится только после Apply.`,
+        tools:[{ name:'crm.list_statuses', args:'pipeline=Продажи', result:'5 статусов: Первичный контакт → Переговоры → Договор → Закрыто (успех/отказ)', ok:true }]
+      },
+      { id:nid(), role:'assistant', content:'Готов diff:', actions:[
+        { id:aid(), tool:'crm.plan_create_status', title:`Создать статус "${statusName}"`,
+          diff:{ before:null, after:{ pipelineId:'sales', name:statusName, color:'#7C3AED', position:4 } } }
+      ]}
+    ];
+  }
+
+  // "поле" pattern → создать поле
+  if (/поле/i.test(t)) {
+    const match = t.match(/["«"']([^"»"']+)["»"']/);
+    const fieldName = match ? match[1] : 'Новое поле';
+    const isContact = /контакт/i.test(t);
+    const isSelect = /список|варианты|выбор/i.test(t);
+    return [
+      { id:nid(), role:'assistant', content:`Добавлю поле «${fieldName}» в ${isContact?'контакты':'сделки'}. ${isSelect?'Будет типа select.':'По умолчанию — текст.'}`,
+        tools:[{ name:'crm.list_fields', args:`entity=${isContact?'contact':'lead'}`, result:isContact?'14 полей':'22 поля', ok:true }]
+      },
+      { id:nid(), role:'assistant', content:'Готов diff:', actions:[
+        { id:aid(), tool:'crm.plan_create_field', title:`Поле "${fieldName}" (${isContact?'контакты':'сделки'})`,
+          diff:{ before:null, after:{ entity:isContact?'contact':'lead', name:fieldName, type:isSelect?'select':'text', required:false } } }
+      ]}
+    ];
+  }
+
+  // "воронка" / "фитнес" / "барбершоп" / "фотостуди" / etc → создать воронку под нишу
+  if (/воронк|фитнес|барбер|фотостуди|салон|стоматолог|курс/i.test(t)) {
+    let niche = 'услуг', statuses = ['Заявка','В работе','Договорились','Оказана','Закрыто'];
+    if (/фитнес/i.test(t))    { niche = 'фитнес-клуба'; statuses = ['Пробное занятие','Первичная консультация','Оформление','Активный','Отписался']; }
+    if (/барбер/i.test(t))    { niche = 'барбершопа';   statuses = ['Заявка','Подтверждение','Пришёл','Услуга оказана','Пропустил']; }
+    if (/фотостуди/i.test(t)) { niche = 'фотостудии';   statuses = ['Заявка','Подбор даты','Бронь','Съёмка','Постпродакшен','Закрыто']; }
+    if (/стоматолог/i.test(t)){ niche = 'стоматологии'; statuses = ['Первичная','Диагностика','План лечения','Лечение','На поддержке']; }
+    if (/курс/i.test(t))      { niche = 'онлайн-курсов'; statuses = ['Лид','Согласовано','Оплата','Прошёл модуль 1','Завершил','Отвалился']; }
+    return [
+      { id:nid(), role:'assistant', content:`Понял, готовлю воронку под ${niche}. Сначала посмотрю что уже есть.`,
+        tools:[{ name:'crm.list_pipelines', result:'3 существующие: Продажи, Сервис, Партнёры', ok:true }]
+      },
+      { id:nid(), role:'assistant', content:`Предлагаю создать воронку с ${statuses.length} статусами:\n${statuses.map(s=>'• '+s).join('\n')}\n\nПоказать diff?` },
+      { id:nid(), role:'assistant', content:'Готов diff:', actions:[
+        { id:aid(), tool:'crm.plan_create_pipeline', title:`Создать воронку для ${niche}`,
+          diff:{ before:null, after:{ name:'Заказы', statuses: statuses.map((s,i) => ({ name:s, color:['#94A3B8','#7C3AED','#0EA5E9','#F59E0B','#10B981','#22C55E'][i%6] })) } } }
+      ]}
+    ];
+  }
+
+  // "задач", "напоминани" → создать задачу
+  if (/задач|напоминани|уведомлени/i.test(t)) {
+    return [
+      { id:nid(), role:'assistant', content:'Настрою напоминание менеджеру. Триггер сработает автоматически.', actions:[
+        { id:aid(), tool:'automation.plan_create_trigger', title:'Задача при статусе "Бронь"',
+          diff:{ before:null, after:{ event:'lead.status_changed', condition:{ statusName:'Бронь' }, action:{ type:'create_task', title:'Позвонить клиенту за 24ч', assignee:'responsible', dueOffset:'-P1D' } } } }
+      ]}
+    ];
+  }
+
+  // "статистик" / "покажи" — read-only
+  if (/статист|покаж|отчёт/i.test(t)) {
+    return [
+      { id:nid(), role:'assistant', content:'За последние 30 дней:\n• Новых сделок: 46\n• Выигранных: 12 (26%)\n• Закрытых с отказом: 8\n• В работе: 26\n• Средний чек: 8 400 ₽\n• Средний цикл сделки: 6.2 дня',
+        tools:[
+          { name:'crm.list_leads', args:'period=30d', result:'46 сделок', ok:true },
+          { name:'crm.aggregate', args:'group_by=status', result:'12 won / 8 lost / 26 in progress', ok:true },
+        ]}
+    ];
+  }
+
+  // "тег"
+  if (/тег/i.test(t)) {
+    const m = t.match(/["«"']([^"»"']+)["»"']/);
+    const tag = m ? m[1] : 'VIP';
+    return [
+      { id:nid(), role:'assistant', content:`Добавлю тег «${tag}». В amoCRM теги задаются на уровне контактов и сделок.`, actions:[
+        { id:aid(), tool:'crm.plan_create_tag', title:`Создать тег "${tag}"`, diff:{ before:null, after:{ name:tag, color:'#7C3AED', entity:'contact' } } }
+      ]}
+    ];
+  }
+
+  // Fallback — general answer
+  return [
+    { id:nid(), role:'assistant', content:'Понял запрос. В боевой версии я тут вызову свои инструменты (посмотреть структуру CRM, предложить план, показать diff). В этом демо я работаю в scripted-режиме — попробуй одну из подсказок под полем ввода или запросы вроде:\n\n• "Добавь статус «Согласование» в воронку"\n• "Создай поле «Размер обуви» в контактах"\n• "Настрой воронку под фитнес-клуб"\n• "Покажи статистику за месяц"' }
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: INTEGRATIONS
+// ═══════════════════════════════════════════════════════════════════════════
+function renderIntegrations() {
+  const list = state.integrations.list;
+  return `<div class="p-6 space-y-6 animate-fade-in">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold">Подключённые интеграции</h2>
+        <div class="text-sm text-ink-500">${list.filter(i=>i.status==='connected').length} активные · ${list.filter(i=>i.status==='expired').length} истекла</div>
+      </div>
+      ${Button({variant:'primary',action:'openIntegrationsModal',children:`${I.plus(14)} Подключить`})}
+    </div>
+
+    <div class="grid gap-3">
+      ${list.map(i => `
+        ${Card({hover:true,className:'p-4 flex items-center gap-4',children:`
+          ${ProviderLogo({providerId:i.provider,size:36})}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="font-medium">${esc(i.name)}</span>
+              ${Badge({color:i.status==='connected'?'green':'red',children:`${i.status==='connected'?I.check(10):I.alert(10)} ${i.status==='connected'?'Подключено':'Токен истёк'}`})}
+            </div>
+            <div class="text-xs text-ink-500 font-mono">${esc(i.subdomain)}</div>
+          </div>
+          <div class="hidden md:flex gap-6 text-sm">
+            ${i.pipelines>0?`<div><div class="text-ink-500 text-xs">Воронок</div><div class="font-medium">${i.pipelines}</div></div>`:''}
+            ${i.fields>0?`<div><div class="text-ink-500 text-xs">Полей</div><div class="font-medium">${i.fields}</div></div>`:''}
+            <div><div class="text-ink-500 text-xs">Синк</div><div class="font-medium">${esc(i.lastSync)}</div></div>
+          </div>
+          <div class="flex gap-2">
+            ${i.status==='expired' ? Button({size:'sm',variant:'success',action:'refreshIntegration',arg:i.id,children:`${I.refresh(14)} Обновить`}) : ''}
+            ${Button({size:'sm',variant:'outline',children:I.settings(14)})}
+          </div>
+        `})}
+      `).join('')}
+    </div>
+
+    ${state.integrations.modalOpen ? Modal({size:'lg', children:`
+      <div class="p-6 border-b border-ink-800 flex items-center justify-between">
+        <div>
+          <h3 class="font-semibold">Подключить интеграцию</h3>
+          <p class="text-xs text-ink-500 mt-1">OAuth-флоу занимает 30 секунд</p>
+        </div>
+        <button data-action="closeIntegrationsModal" class="text-ink-500 hover:text-ink-200">${I.x(18)}</button>
+      </div>
+      <div class="p-6">
+        <div class="text-xs text-ink-500 mb-3 uppercase tracking-wider">Популярные</div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+          ${providers.filter(p=>p.popular).map(p=>`<button data-action="addIntegration" data-arg="${p.id}" class="text-left p-4 rounded-xl border border-ink-800 hover:border-brand-500/50 hover:bg-brand-600/5 transition">
+            ${ProviderLogo({providerId:p.id,size:32})}
+            <div class="font-medium mt-3">${esc(p.name)}</div>
+            <div class="text-xs text-ink-500 mt-0.5">${esc(p.desc)}</div>
+          </button>`).join('')}
+        </div>
+        <div class="text-xs text-ink-500 mb-3 uppercase tracking-wider">Скоро</div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          ${providers.filter(p=>p.soon).map(p=>`<div class="p-4 rounded-xl border border-ink-800 opacity-50">
+            ${ProviderLogo({providerId:p.id,size:32})}
+            <div class="font-medium mt-3">${esc(p.name)}</div>
+            <div class="text-xs text-ink-500 mt-0.5">${esc(p.desc)}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    `}) : ''}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: TEMPLATES
+// ═══════════════════════════════════════════════════════════════════════════
+function renderTemplates() {
+  const filter = state.templates.filter;
+  const filtered = filter === 'all' ? templates : templates.filter(t => t.kind === filter);
+  const filters = [{id:'all',l:'Все'},{id:'site',l:'Сайты'},{id:'miniapp',l:'Mini Apps'},{id:'bot_tg',l:'TG-боты'},{id:'bot_max',l:'MAX-боты'}];
+
+  return `<div class="p-6 space-y-6 animate-fade-in">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h2 class="text-lg font-semibold">Каталог шаблонов</h2>
+        <div class="text-sm text-ink-500">Выбери шаблон → AI кастомизирует под твой бизнес → деплой</div>
+      </div>
+      <div class="flex gap-2">
+        ${filters.map(f => `<button data-action="setTemplateFilter" data-arg="${f.id}" class="px-3 py-1.5 text-xs rounded-lg border transition ${filter===f.id?'border-brand-500 bg-brand-600/15 text-brand-200':'border-ink-800 text-ink-400 hover:border-ink-600'}">${f.l}</button>`).join('')}
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      ${filtered.map(t => `<div class="rounded-xl border border-ink-800 bg-ink-900/50 backdrop-blur hover:border-ink-700 hover:bg-ink-900/80 transition overflow-hidden group cursor-pointer" data-action="go" data-arg="builder">
+        <div class="h-36 bg-gradient-to-br relative flex items-center justify-center ${t.color}">
+          <span class="text-ink-100/70 group-hover:scale-110 transition inline-block">${I[t.icon](48)}</span>
+          ${Badge({color:'gray',className:'absolute top-3 left-3 bg-ink-950/70 border-ink-700',children:t.tag})}
+        </div>
+        <div class="p-4">
+          <div class="font-medium mb-1">${esc(t.name)}</div>
+          <div class="text-xs text-ink-400 mb-3 line-clamp-2 h-8">${esc(t.desc)}</div>
+          <div class="flex gap-2">
+            ${Button({size:'sm',variant:'primary',className:'flex-1 justify-center',action:'go',arg:'builder',children:`${I.sparkles(12)} Использовать`})}
+            ${Button({size:'sm',variant:'outline',children:I.eye(14)})}
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: TEMPLATE BUILDER (with LIVE preview)
+// ═══════════════════════════════════════════════════════════════════════════
+function renderBuilder() {
+  const c = state.builder.config;
+  const presets = ['Поменяй акцент на зелёный', 'Замени заголовок на "Фотостудия в Питере"', 'Добавь услугу "Предметная съёмка"'];
+
+  return `<div class="flex h-[calc(100vh-4rem)]">
+    <div class="w-80 border-r border-ink-800 bg-ink-950/40 flex flex-col">
+      <div class="p-4 border-b border-ink-800">
+        <div class="text-xs text-ink-500 mb-1">Шаблон</div>
+        <div class="font-semibold">Лендинг услуг</div>
+        <div class="text-xs text-ink-500 mt-1">draft · версия конфига 1</div>
+      </div>
+      <div class="flex-1 overflow-auto p-4 space-y-4">
+        <div>
+          <div class="text-xs text-ink-500 uppercase tracking-wider mb-2 flex items-center gap-1">${I.sparkles(11)} Изменить через AI</div>
+          <div class="space-y-2">
+            ${presets.map(p => `<button data-action="builderPreset" data-arg="${esc(p)}" class="w-full text-left text-xs p-2.5 rounded-lg border border-ink-800 hover:border-brand-500/50 hover:bg-brand-600/5">${p}</button>`).join('')}
+          </div>
+          ${Button({variant:'ghost',size:'sm',className:'w-full justify-center mt-2',action:'go',arg:'chat',children:`${I.message(12)} Открыть полный чат`})}
+        </div>
+
+        <div class="border-t border-ink-800 pt-4">
+          <div class="text-xs text-ink-500 uppercase tracking-wider mb-2">Ручные настройки</div>
+          <div class="space-y-3 text-sm">
+            <label class="block">
+              <span class="text-xs text-ink-400">Название</span>
+              <input data-bind="builder.config.brand.name" value="${esc(c.brand.name)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+            </label>
+            <label class="block">
+              <span class="text-xs text-ink-400">Заголовок</span>
+              <input data-bind="builder.config.hero.title" value="${esc(c.hero.title)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+            </label>
+            <label class="block">
+              <span class="text-xs text-ink-400">Подзаголовок</span>
+              <input data-bind="builder.config.hero.subtitle" value="${esc(c.hero.subtitle)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+            </label>
+            <label class="block">
+              <span class="text-xs text-ink-400">Кнопка</span>
+              <input data-bind="builder.config.cta" value="${esc(c.cta)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+            </label>
+            <label class="block">
+              <span class="text-xs text-ink-400">Акцентный цвет</span>
+              <div class="mt-1 flex gap-2">
+                ${['#7C3AED','#10B981','#F59E0B','#EF4444','#0EA5E9','#EC4899'].map(col => `<button data-action="builderSetColor" data-arg="${col}" class="h-8 w-8 rounded-lg border-2 transition ${c.brand.primaryColor===col?'border-ink-100':'border-transparent'}" style="background:${col}"></button>`).join('')}
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="border-t border-ink-800 pt-4">
+          <div class="text-xs text-ink-500 uppercase tracking-wider mb-2">Привязка к CRM</div>
+          ${Card({className:'p-3 text-sm',children:`
+            <div class="flex items-center gap-2 mb-1">${ProviderLogo({providerId:'amo',size:20})}<span class="font-medium text-xs">amoCRM</span></div>
+            <div class="text-xs text-ink-500">Воронка: Продажи → статус "Новый лид"</div>
+          `})}
+        </div>
+      </div>
+      <div class="p-3 border-t border-ink-800 space-y-2">
+        ${Button({variant:'primary',size:'md',className:'w-full justify-center',action:'go',arg:'deployments',children:`${I.rocket(14)} Задеплоить`})}
+        ${Button({variant:'outline',size:'sm',className:'w-full justify-center',children:`${I.download(14)} Экспорт конфига`})}
+      </div>
+    </div>
+
+    <div class="flex-1 bg-ink-950 overflow-auto">
+      <div class="border-b border-ink-800 p-3 flex items-center justify-between text-sm">
+        <div class="flex items-center gap-2 text-ink-400">${I.eye(14)} Live preview ${Badge({color:'gray',children:'desktop'})}</div>
+        <div class="flex items-center gap-2">
+          ${state.builder.busy ? `<span class="text-xs text-brand-300 flex items-center gap-1"><span class="animate-spin-slow inline-block">${I.sparkles(11)}</span> AI применяет изменения...</span>` : ''}
+          ${Badge({color:'yellow',children:'draft'})}
+        </div>
+      </div>
+      <div id="preview-panel" class="p-8">${renderPreviewCard()}</div>
+    </div>
+  </div>`;
+}
+
+function renderPreviewCard() {
+  const c = state.builder.config;
+  return `<div class="max-w-4xl mx-auto bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden">
+    <div class="px-8 py-4 border-b flex justify-between items-center" style="border-color:#E2E8F0">
+      <div class="flex items-center gap-2">
+        <div class="h-7 w-7 rounded-lg" style="background:${c.brand.primaryColor}"></div>
+        <div class="font-bold text-lg" style="color:#0F172A">${esc(c.brand.name)}</div>
+      </div>
+      <div class="hidden md:flex gap-5 text-sm" style="color:#475569"><span>Услуги</span><span>Портфолио</span><span>Контакты</span></div>
+      <button class="text-xs font-semibold text-white px-4 py-2 rounded-lg" style="background:${c.brand.primaryColor}">${esc(c.cta)}</button>
+    </div>
+    <div class="px-8 py-16 text-center">
+      <div class="inline-block px-3 py-1 text-[11px] font-semibold rounded-full mb-4" style="background:#F1F5F9;color:#475569">Фотостудия с 2018 года</div>
+      <h1 class="text-4xl md:text-5xl font-extrabold mb-4 leading-tight" style="color:#0F172A">${esc(c.hero.title)}</h1>
+      <p class="text-lg max-w-xl mx-auto mb-8" style="color:#475569">${esc(c.hero.subtitle)}</p>
+      <button class="text-white font-semibold px-7 py-3 rounded-xl shadow-lg" style="background:${c.brand.primaryColor}">${esc(c.cta)}</button>
+    </div>
+    <div class="px-8 py-12" style="background:#F8FAFC">
+      <div class="text-center font-bold text-xl mb-8" style="color:#0F172A">Услуги</div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        ${c.services.map(s => `<div class="bg-white p-5 rounded-xl text-center" style="box-shadow:0 2px 6px rgba(15,23,42,.04)">
+          <div class="h-10 w-10 mx-auto mb-3 rounded-lg" style="background:${c.brand.primaryColor}20"></div>
+          <div class="font-semibold text-sm" style="color:#0F172A">${esc(s)}</div>
+          <div class="text-xs mt-1" style="color:#94A3B8">от 5 000 ₽</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="px-8 py-10 text-center" style="background:${c.brand.primaryColor}">
+      <div class="font-bold text-2xl text-white mb-3">Готов к съёмке?</div>
+      <button class="bg-white font-semibold px-7 py-3 rounded-xl" style="color:${c.brand.primaryColor}">Оставить заявку</button>
+    </div>
+  </div>
+  <div class="text-center mt-6 text-xs text-ink-500">Заявки уйдут в amoCRM → воронка "Продажи" → статус "Новый лид"</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: DEPLOYMENTS
+// ═══════════════════════════════════════════════════════════════════════════
+function renderDeployments() {
+  return `<div class="p-6 space-y-6 animate-fade-in">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold">Деплои</h2>
+        <div class="text-sm text-ink-500">Запущенные сайты, miniapps и боты</div>
+      </div>
+      ${Button({variant:'primary',action:'go',arg:'templates',children:`${I.plus(14)} Новый деплой`})}
+    </div>
+    ${Card({children:`<table class="w-full text-sm">
+      <thead class="text-xs text-ink-500 border-b border-ink-800">
+        <tr>
+          <th class="text-left p-4 font-medium">Шаблон</th>
+          <th class="text-left p-4 font-medium">Адрес</th>
+          <th class="text-left p-4 font-medium">Статус</th>
+          <th class="text-left p-4 font-medium">Лидов</th>
+          <th class="text-left p-4 font-medium">Обновлено</th>
+          <th class="text-right p-4 font-medium"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${deployments.map(d => `<tr class="border-b border-ink-800 last:border-0 hover:bg-ink-800/30">
+          <td class="p-4 font-medium">${esc(d.template)}</td>
+          <td class="p-4 font-mono text-xs text-ink-300"><div class="flex items-center gap-1">${esc(d.url)} <span class="text-ink-500">${I.external(11)}</span></div></td>
+          <td class="p-4">${d.status==='live' ? Badge({color:'green',children:`<span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse-dot"></span> live`}) : Badge({color:'yellow',children:'draft'})}</td>
+          <td class="p-4">${d.leads}</td>
+          <td class="p-4 text-ink-400">${d.updated}</td>
+          <td class="p-4 text-right">${Button({size:'sm',variant:'ghost',children:I.settings(14)})}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`})}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: MARKETPLACE with 3-step install wizard
+// ═══════════════════════════════════════════════════════════════════════════
+function renderMarketplace() {
+  const inst = state.marketplace.installing;
+  const step = state.marketplace.step;
+
+  return `<div class="p-6 space-y-6 animate-fade-in">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h2 class="text-lg font-semibold">Маркетплейс рецептов</h2>
+        <div class="text-sm text-ink-500">Готовые автоматизации между твоими интеграциями · установлено: ${state.marketplace.installed.length}</div>
+      </div>
+      <div class="flex gap-2">
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500">${I.search(14)}</span>
+          <input placeholder="Поиск..." class="bg-ink-900 border border-ink-800 rounded-lg pl-9 pr-3 py-2 text-sm focus:border-brand-500 outline-none w-64">
+        </div>
+        ${Button({variant:'outline',size:'md',children:`${I.filter(14)} Фильтры`})}
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      ${recipes.map(r => {
+        const installed = state.marketplace.installed.includes(r.id);
+        return Card({hover:true,className:'p-5',children:`
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex -space-x-2">${r.providers.map(p => `<div class="ring-2 ring-ink-900 rounded-md">${ProviderLogo({providerId:p,size:28})}</div>`).join('')}</div>
+            ${r.status==='popular' ? Badge({color:'violet',children:`${I.trending(10)} популярное`}) : r.status==='new' ? Badge({color:'green',children:'новое'}) : ''}
+          </div>
+          <div class="font-semibold mb-1">${esc(r.name)}</div>
+          <div class="text-xs text-ink-400 mb-4 h-8 line-clamp-2">${esc(r.desc)}</div>
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-ink-500">${r.runs} установок</div>
+            ${installed ? Badge({color:'green',children:`${I.check(11)} Установлено`}) : Button({size:'sm',variant:'soft',action:'openRecipeInstall',arg:r.id,children:`${I.plus(12)} Установить`})}
+          </div>
+        `});
+      }).join('')}
+    </div>
+
+    ${inst ? Modal({size:'lg', children:`
+      <div class="p-6 border-b border-ink-800 flex items-start justify-between">
+        <div>
+          <div class="flex -space-x-2 mb-2">${inst.providers.map(p => `<div class="ring-2 ring-ink-900 rounded-md">${ProviderLogo({providerId:p,size:28})}</div>`).join('')}</div>
+          <h3 class="font-semibold">${esc(inst.name)}</h3>
+          <p class="text-xs text-ink-500 mt-1">${esc(inst.desc)}</p>
+        </div>
+        <button data-action="closeRecipeInstall" class="text-ink-500 hover:text-ink-200">${I.x(18)}</button>
+      </div>
+      <div class="border-b border-ink-800">
+        <div class="px-6 pt-4 flex gap-2 mb-3 text-xs">
+          ${[{n:1,l:'Триггер'},{n:2,l:'Маппинг полей'},{n:3,l:'Тест и запуск'}].map(s => `<div class="flex items-center gap-2 ${step>=s.n?'text-brand-300':'text-ink-500'}">
+            <div class="h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-semibold ${step>=s.n?'bg-brand-600 text-white':'bg-ink-800 text-ink-500'}">${step>s.n?I.check(10):s.n}</div>${s.l}${s.n<3?`<span class="text-ink-700">${I.chevR(12)}</span>`:''}
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="p-6 space-y-4">
+        ${step===1 ? `
+          <div>
+            <div class="text-xs text-ink-400 mb-1">Когда запускать рецепт</div>
+            <select class="w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+              <option>Новая сделка в воронке "Продажи"</option>
+              <option>Сделка перешла в статус "Закрыто (успех)"</option>
+              <option>Контакт получил новый тег</option>
+            </select>
+          </div>
+          <div>
+            <div class="text-xs text-ink-400 mb-1">Telegram-канал назначения</div>
+            <input placeholder="@konvey_demo_alerts" class="w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none font-mono">
+          </div>
+          <div>
+            <div class="text-xs text-ink-400 mb-1">Шаблон сообщения</div>
+            <textarea rows="4" class="w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none font-mono">🔥 Новая заявка
+👤 {{contact.name}}
+💰 {{lead.price}} ₽
+👉 {{lead.url}}</textarea>
+          </div>
+        ` : ''}
+        ${step===2 ? `
+          <div class="space-y-2 text-sm">
+            <div class="text-xs text-ink-400 mb-2">Маппинг полей amoCRM → переменные шаблона</div>
+            ${[{t:'{{contact.name}}',f:'Контакт: Имя'},{t:'{{lead.price}}',f:'Сделка: Бюджет'},{t:'{{lead.url}}',f:'Сделка: URL'}].map(m => `<div class="grid grid-cols-2 gap-2 items-center">
+              <code class="text-xs px-2 py-1.5 bg-ink-900 border border-ink-800 rounded text-brand-300">${m.t}</code>
+              <select class="bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none"><option>${m.f}</option></select>
+            </div>`).join('')}
+          </div>
+        ` : ''}
+        ${step===3 ? `
+          <div class="space-y-3">
+            ${Card({className:'p-4 bg-emerald-500/5 border-emerald-500/30',children:`
+              <div class="flex items-center gap-2 text-sm font-medium text-emerald-300 mb-1">${I.check(14)} Тестовый прогон успешен</div>
+              <div class="text-xs text-ink-400">Сообщение отправлено в @konvey_demo_alerts за 0.4 сек</div>
+            `})}
+            ${Card({className:'p-4',children:`
+              <div class="text-xs text-ink-400 mb-2">Превью сообщения</div>
+              <div class="bg-ink-950 p-3 rounded-lg text-sm font-mono whitespace-pre-line">🔥 Новая заявка
+👤 Анна Петрова
+💰 45 000 ₽
+👉 konveydemo.amocrm.ru/leads/detail/123</div>
+            `})}
+            <div class="flex items-center gap-2 text-xs text-ink-500">${I.shield(12)} Рецепт будет работать в продакшене сразу после запуска</div>
+          </div>
+        ` : ''}
+      </div>
+      <div class="p-4 border-t border-ink-800 flex items-center justify-between">
+        <div class="text-xs text-ink-500">Шаг ${step} из 3</div>
+        <div class="flex gap-2">
+          ${step>1 ? Button({variant:'ghost',action:'prevRecipeStep',children:'Назад'}) : ''}
+          ${step<3
+            ? Button({variant:'primary',action:'nextRecipeStep',children:`Дальше ${I.arrowR(14)}`})
+            : Button({variant:'success',action:'finishRecipeInstall',children:`${I.check(14)} Запустить`})}
+        </div>
+      </div>
+    `}) : ''}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: BILLING
+// ═══════════════════════════════════════════════════════════════════════════
+function renderBilling() {
+  const usage = [
+    {l:'AI-сообщения', v:1242, m:5000,  c:'violet'},
+    {l:'Deployments',  v:3,    m:10,    c:'green'},
+    {l:'Recipe runs',  v:847,  m:10000, c:'green'},
+  ];
+  const history = [
+    { d:'12 мая',   t:'Pro · ежемесячная подписка',     m:'Visa ··4242', a:'7 900 ₽' },
+    { d:'12 апр',   t:'Pro · ежемесячная подписка',     m:'Visa ··4242', a:'7 900 ₽' },
+    { d:'5 апр',    t:'Starter → Pro апгрейд',          m:'Visa ··4242', a:'4 910 ₽' },
+    { d:'5 мар',    t:'Starter · ежемесячная подписка', m:'СБП',         a:'2 990 ₽' },
+  ];
+  return `<div class="p-6 space-y-6 animate-fade-in">
+    ${Card({className:'p-6',children:`
+      <div class="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          ${Badge({color:'violet',className:'mb-2',children:`${I.zap(11)} Текущий план`})}
+          <h2 class="text-2xl font-bold">Pro</h2>
+          <div class="text-sm text-ink-400 mt-1">7 900 ₽ / мес · следующий платёж 12 июня 2026</div>
+        </div>
+        <div class="flex gap-2">
+          ${Button({variant:'outline',children:'Сменить тариф'})}
+          ${Button({variant:'ghost',className:'text-rose-400 hover:bg-rose-500/10',children:'Отменить'})}
+        </div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-ink-800">
+        ${usage.map(u => `<div>
+          <div class="flex justify-between text-sm mb-1"><span class="text-ink-400">${u.l}</span><span class="font-medium">${fmt(u.v)} / ${fmt(u.m)}</span></div>
+          ${ProgressBar({value:u.v,max:u.m,color:u.c})}
+        </div>`).join('')}
+      </div>
+    `})}
+
+    ${Card({children:`
+      <div class="p-5 border-b border-ink-800 flex items-center justify-between">
+        <h3 class="font-semibold">История платежей</h3>
+        ${Button({size:'sm',variant:'ghost',children:`${I.download(14)} Все чеки`})}
+      </div>
+      <table class="w-full text-sm">
+        <thead class="text-xs text-ink-500"><tr>
+          <th class="text-left p-4 font-medium">Дата</th>
+          <th class="text-left p-4 font-medium">Описание</th>
+          <th class="text-left p-4 font-medium">Метод</th>
+          <th class="text-left p-4 font-medium">Сумма</th>
+          <th class="text-right p-4 font-medium">Чек</th>
+        </tr></thead>
+        <tbody>
+          ${history.map(r => `<tr class="border-t border-ink-800 hover:bg-ink-800/30">
+            <td class="p-4 text-ink-300">${r.d}</td>
+            <td class="p-4">${r.t}</td>
+            <td class="p-4 text-ink-400 font-mono text-xs">${r.m}</td>
+            <td class="p-4 font-medium">${r.a}</td>
+            <td class="p-4 text-right">${Button({size:'sm',variant:'ghost',children:I.download(14)})}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    `})}
+
+    ${Card({className:'p-6',children:`
+      <h3 class="font-semibold mb-1">Способы оплаты</h3>
+      <p class="text-xs text-ink-500 mb-4">Российские карты, СБП, иностранные карты (Stripe)</p>
+      <div class="space-y-2">
+        <div class="flex items-center gap-3 p-3 rounded-lg border border-ink-800">
+          <div class="h-9 w-12 rounded bg-gradient-to-br from-sky-500 to-indigo-700 flex items-center justify-center font-bold text-xs">VISA</div>
+          <div class="flex-1"><div class="text-sm font-medium">Visa ··4242</div><div class="text-xs text-ink-500">истекает 04/28 · основной</div></div>
+          ${Badge({color:'green',children:'по умолчанию'})}
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg border border-ink-800">
+          <div class="h-9 w-12 rounded bg-emerald-600 flex items-center justify-center font-bold text-[10px]">СБП</div>
+          <div class="flex-1"><div class="text-sm font-medium">Система быстрых платежей</div><div class="text-xs text-ink-500">привязан через Т-Банк</div></div>
+          ${Button({size:'sm',variant:'ghost',children:I.settings(14)})}
+        </div>
+      </div>
+      ${Button({variant:'outline',size:'sm',className:'mt-3',children:`${I.plus(14)} Добавить способ`})}
+    `})}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: AUDIT LOG
+// ═══════════════════════════════════════════════════════════════════════════
+function renderAudit() {
+  const tab = state.audit.tab;
+  const list = tab==='all' ? state.audit.log : state.audit.log.filter(a => a.kind === tab);
+  const tabs = [{id:'all',l:'Все'},{id:'mutation',l:'Мутации'},{id:'recipe',l:'Рецепты'},{id:'deploy',l:'Деплои'},{id:'auth',l:'Авторизация'},{id:'error',l:'Ошибки'}];
+  const colors = {mutation:'violet',error:'red',recipe:'blue',deploy:'green',auth:'yellow',billing:'gray',preview:'gray'};
+
+  return `<div class="p-6 space-y-4 animate-fade-in">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h2 class="text-lg font-semibold">Журнал событий</h2>
+        <div class="text-sm text-ink-500">Каждое действие в workspace, с возможностью отката</div>
+      </div>
+      <div class="flex gap-2">
+        ${Button({variant:'outline',size:'md',children:`${I.filter(14)} Период`})}
+        ${Button({variant:'outline',size:'md',children:`${I.download(14)} Экспорт`})}
+      </div>
+    </div>
+    ${Card({children:`
+      <div class="px-4">
+        <div class="flex gap-1 border-b border-ink-800">
+          ${tabs.map(t => `<button data-action="setAuditTab" data-arg="${t.id}" class="px-3 py-2 text-sm font-medium transition border-b-2 -mb-px ${tab===t.id?'text-brand-300 border-brand-500':'text-ink-400 hover:text-ink-100 border-transparent'}">${t.l}</button>`).join('')}
+        </div>
+      </div>
+      <table class="w-full text-sm">
+        <thead class="text-xs text-ink-500 border-b border-ink-800"><tr>
+          <th class="text-left p-4 font-medium">Когда</th>
+          <th class="text-left p-4 font-medium">Кто</th>
+          <th class="text-left p-4 font-medium">Действие</th>
+          <th class="text-left p-4 font-medium">Описание</th>
+          <th class="text-right p-4 font-medium"></th>
+        </tr></thead>
+        <tbody>
+          ${list.map(a => `<tr class="border-b border-ink-800 last:border-0 hover:bg-ink-800/30">
+            <td class="p-4 text-ink-400 whitespace-nowrap">${esc(a.when)}</td>
+            <td class="p-4">${
+              a.who==='AI' ? Badge({color:'violet',children:`${I.sparkles(10)} AI`}) :
+              a.who==='recipe' ? Badge({color:'blue',children:`${I.workflow(10)} Recipe`}) :
+              a.who==='system' ? Badge({color:'gray',children:'System'}) :
+              `<span class="text-ink-200">${esc(a.who)}</span>`
+            }</td>
+            <td class="p-4">${Badge({color:colors[a.kind]||'gray',children:esc(a.action)})}</td>
+            <td class="p-4 text-ink-200">${esc(a.target)}</td>
+            <td class="p-4 text-right">${Button({size:'sm',variant:'ghost',children:I.chevR(14)})}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    `})}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCREEN: SETTINGS
+// ═══════════════════════════════════════════════════════════════════════════
+function renderSettings() {
+  const toggles = [
+    { i:'lock',    t:'Шифрование токенов', d:'Envelope encryption (KEK + DEK) включено', on:true },
+    { i:'shield',  t:'2FA',                d:'Двухфакторная аутентификация для админов', on:false },
+    { i:'scroll',  t:'Аудит-журнал',        d:'Все действия логируются 365 дней', on:true },
+    { i:'refresh', t:'Ротация ключей',     d:'Автоматическая ротация DEK каждые 90 дней', on:true },
+  ];
+  const team = [
+    { n:'Григорий',     e:'liaschenkom@gmail.com', r:'Owner' },
+    { n:'Анна Петрова', e:'anna@example.com',       r:'Admin' },
+    { n:'Иван Сидоров', e:'ivan@example.com',       r:'Member' },
+  ];
+  return `<div class="p-6 space-y-6 max-w-3xl animate-fade-in">
+    ${Card({className:'p-6',children:`
+      <h3 class="font-semibold mb-4">Workspace</h3>
+      <div class="space-y-3 text-sm">
+        <label class="block"><span class="text-xs text-ink-400">Название</span>
+          <input value="Konvey Demo" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 focus:border-brand-500 outline-none"></label>
+        <label class="block"><span class="text-xs text-ink-400">Slug</span>
+          <input value="konvey-demo" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 focus:border-brand-500 outline-none font-mono"></label>
+        <label class="block"><span class="text-xs text-ink-400">Часовой пояс</span>
+          <select class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 focus:border-brand-500 outline-none">
+            <option>Europe/Moscow (UTC+3)</option><option>Europe/Kaliningrad (UTC+2)</option><option>Asia/Yekaterinburg (UTC+5)</option>
+          </select></label>
+      </div>
+    `})}
+    ${Card({className:'p-6',children:`
+      <h3 class="font-semibold mb-1">Безопасность</h3>
+      <p class="text-xs text-ink-500 mb-4">Управление токенами, аудитом и доступами</p>
+      <div class="space-y-3">
+        ${toggles.map(s => `<div class="flex items-center gap-3 p-3 rounded-lg border border-ink-800">
+          <div class="h-9 w-9 rounded-lg bg-ink-800 flex items-center justify-center text-ink-300">${I[s.i](16)}</div>
+          <div class="flex-1"><div class="text-sm font-medium">${s.t}</div><div class="text-xs text-ink-500">${s.d}</div></div>
+          <div class="h-6 w-11 rounded-full p-0.5 transition ${s.on?'bg-emerald-500':'bg-ink-700'}">
+            <div class="h-5 w-5 rounded-full bg-white transition ${s.on?'translate-x-5':''}"></div>
+          </div>
+        </div>`).join('')}
+      </div>
+    `})}
+    ${Card({className:'p-6',children:`
+      <h3 class="font-semibold mb-1">Команда</h3>
+      <p class="text-xs text-ink-500 mb-4">Доступ к workspace</p>
+      <div class="space-y-2">
+        ${team.map(m => `<div class="flex items-center gap-3 p-3 rounded-lg border border-ink-800">
+          <div class="h-9 w-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center font-semibold text-sm">${m.n[0]}</div>
+          <div class="flex-1"><div class="text-sm font-medium">${m.n}</div><div class="text-xs text-ink-500">${m.e}</div></div>
+          ${Badge({color:m.r==='Owner'?'violet':m.r==='Admin'?'blue':'gray',children:m.r})}
+          ${m.r!=='Owner' ? Button({size:'sm',variant:'ghost',children:I.x(14)}) : ''}
+        </div>`).join('')}
+      </div>
+      ${Button({variant:'outline',size:'sm',className:'mt-3',children:`${I.plus(14)} Пригласить`})}
+    `})}
+
+    ${Card({className:'p-6',children:`
+      <h3 class="font-semibold mb-1">Демо-режим</h3>
+      <p class="text-xs text-ink-500 mb-4">Это статическое демо на GitHub Pages. Данные хранятся в localStorage браузера.</p>
+      ${Button({variant:'outline',size:'md',action:'resetDemo',children:`${I.trash(14)} Сбросить демо-данные`})}
+    `})}
+
+    ${Card({className:'p-6 border-rose-500/30',children:`
+      <h3 class="font-semibold text-rose-400 mb-1">Опасная зона</h3>
+      <p class="text-xs text-ink-500 mb-4">Удаление workspace необратимо. Все интеграции отзовутся, боты остановятся, deployments удалятся.</p>
+      ${Button({variant:'danger',size:'md',children:'Удалить workspace'})}
+    `})}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAIN RENDER
+// ═══════════════════════════════════════════════════════════════════════════
+const screens = {
+  dashboard:    renderDashboard,
+  chat:         renderChat,
+  integrations: renderIntegrations,
+  templates:    renderTemplates,
+  builder:      renderBuilder,
+  deployments:  renderDeployments,
+  marketplace:  renderMarketplace,
+  billing:      renderBilling,
+  audit:        renderAudit,
+  settings:     renderSettings,
+};
+
+function render() {
+  const app = document.getElementById('app');
+  if (state.view === 'landing') {
+    app.innerHTML = renderLanding();
+  } else {
+    const screen = screens[state.view] || renderDashboard;
+    app.innerHTML = `<div class="flex h-screen">${Sidebar()}<main class="flex-1 flex flex-col overflow-hidden">${TopBar()}<div class="flex-1 overflow-auto">${screen()}</div></main></div>`;
+  }
+  // Post-render: scroll chat to bottom, focus inputs where needed
+  const chatScroll = document.getElementById('chat-scroll');
+  if (chatScroll) chatScroll.scrollTop = chatScroll.scrollHeight;
+  saveState();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ACTIONS  (dispatched via data-action attributes)
+// ═══════════════════════════════════════════════════════════════════════════
+const actions = {
+  go: (view) => { state.view = view; render(); },
+
+  // Landing / modals
+  openIntegrationsModal:  () => { state.integrations.modalOpen = true;  render(); },
+  closeIntegrationsModal: () => { state.integrations.modalOpen = false; render(); },
+  closeAllModals: () => {
+    state.integrations.modalOpen = false;
+    state.marketplace.installing = null;
+    render();
+  },
+
+  // Chat mutations
+  applyMutation:  (id) => {
+    state.chat.applied[id] = 'applied';
+    state.audit.log.unshift({ id:'a'+Date.now(), who:'Григорий', action:'apply', target:`Мутация ${id} применена в CRM`, when:'только что', kind:'mutation' });
+    render();
+  },
+  rejectMutation: (id) => { state.chat.applied[id] = 'rejected'; render(); },
+
+  // Chat input
+  setChatInputAndFocus: (text) => {
+    const ta = document.getElementById('chat-input');
+    if (ta) { ta.value = text; ta.focus(); }
+  },
+  sendChatMessage: () => {
+    const ta = document.getElementById('chat-input');
+    if (!ta) return;
+    const text = ta.value.trim();
+    if (!text) return;
+    const userMsg = { id: 'm'+(++state.chat.nextId), role:'user', content: text };
+    state.chat.messages.push(userMsg);
+    state.chat.typing = true;
+    ta.value = '';
+    render();
+    setTimeout(() => {
+      state.chat.typing = false;
+      const responses = scriptedAIResponse(text);
+      state.chat.messages.push(...responses);
+      render();
+    }, 900);
+  },
+
+  newChatSession: () => {
+    state.chat.messages = [];
+    state.chat.applied = {};
+    state.chat.messages.push({
+      id:'m'+(++state.chat.nextId), role:'assistant',
+      content:'Готов помочь. Что настроим? Могу изменить структуру CRM, собрать шаблон сайта или бота, подключить интеграцию. Опиши задачу — покажу план и diff перед применением.'
+    });
+    state.view = 'chat';
+    render();
+  },
+
+  // Integrations
+  addIntegration: (providerId) => {
+    const p = providerById(providerId);
+    if (!p) return;
+    state.integrations.list.push({
+      id: 'i'+Date.now(), provider: providerId,
+      name: `${p.name} (только что)`, subdomain: 'demo.example.com',
+      status: 'connected', lastSync: 'только что', pipelines: 0, fields: 0,
+    });
+    state.integrations.modalOpen = false;
+    state.audit.log.unshift({ id:'a'+Date.now(), who:'Григорий', action:'oauth', target:`Подключён ${p.name}`, when:'только что', kind:'auth' });
+    render();
+  },
+  refreshIntegration: (id) => {
+    const it = state.integrations.list.find(x => x.id === id);
+    if (it) { it.status = 'connected'; it.lastSync = 'только что'; }
+    render();
+  },
+
+  // Templates
+  setTemplateFilter: (id) => { state.templates.filter = id; render(); },
+
+  // Builder
+  builderSetColor: (color) => { state.builder.config.brand.primaryColor = color; render(); },
+  builderPreset: (text) => {
+    state.builder.busy = true;
+    render();
+    setTimeout(() => {
+      const c = state.builder.config;
+      if (text.includes('зелёный')) c.brand.primaryColor = '#10B981';
+      if (text.includes('Питере'))  c.hero.title = 'Фотостудия в Питере';
+      if (text.includes('Предмет')) c.services = [...c.services, 'Предметная'];
+      state.builder.busy = false;
+      render();
+    }, 700);
+  },
+
+  // Marketplace
+  openRecipeInstall: (id) => { state.marketplace.installing = recipes.find(r => r.id === id); state.marketplace.step = 1; render(); },
+  closeRecipeInstall: () => { state.marketplace.installing = null; render(); },
+  nextRecipeStep: () => { state.marketplace.step++; render(); },
+  prevRecipeStep: () => { state.marketplace.step--; render(); },
+  finishRecipeInstall: () => {
+    const inst = state.marketplace.installing;
+    if (inst && !state.marketplace.installed.includes(inst.id)) {
+      state.marketplace.installed.push(inst.id);
+      state.audit.log.unshift({ id:'a'+Date.now(), who:'Григорий', action:'install_recipe', target:`Установлен «${inst.name}»`, when:'только что', kind:'recipe' });
+    }
+    state.marketplace.installing = null;
+    render();
+  },
+
+  // Audit
+  setAuditTab: (id) => { state.audit.tab = id; render(); },
+
+  // Meta
+  resetDemo: () => {
+    if (confirm('Сбросить все данные демо? Все применённые мутации, установленные рецепты и настройки будут стёрты.')) {
+      resetState();
+    }
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  EVENT DELEGATION
+// ═══════════════════════════════════════════════════════════════════════════
+document.body.addEventListener('click', (e) => {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+  const action = target.dataset.action;
+  const arg = target.dataset.arg;
+  if (actions[action]) {
+    e.preventDefault();
+    actions[action](arg, e);
+  }
+});
+
+// Form submit for chat
+document.body.addEventListener('submit', (e) => {
+  const form = e.target.closest('[data-action="sendChatMessageForm"]');
+  if (form) { e.preventDefault(); actions.sendChatMessage(); }
+});
+
+// Enter-to-send on chat textarea
+document.body.addEventListener('keydown', (e) => {
+  if (e.target && e.target.id === 'chat-input' && e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    actions.sendChatMessage();
+  }
+});
+
+// Input bindings — update state WITHOUT full re-render (preserves focus/caret)
+document.body.addEventListener('input', (e) => {
+  const el = e.target.closest('[data-bind]');
+  if (!el) return;
+  const path = el.dataset.bind;
+  const parts = path.split('.');
+  let cur = state;
+  for (let i = 0; i < parts.length - 1; i++) cur = cur[parts[i]];
+  cur[parts[parts.length - 1]] = el.value;
+  saveState();
+  // For builder — refresh preview only
+  const preview = document.getElementById('preview-panel');
+  if (preview && path.startsWith('builder.config.')) {
+    preview.innerHTML = renderPreviewCard();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+loadState();
+render();
+</script>
+</body>
+</html>
