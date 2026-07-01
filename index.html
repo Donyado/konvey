@@ -185,7 +185,7 @@ const deployments = [
 // ═══════════════════════════════════════════════════════════════════════════
 //  STATE  (with localStorage persistence)
 // ═══════════════════════════════════════════════════════════════════════════
-const LS_KEY = 'konvey_demo_state_v1';
+const LS_KEY = 'konvey_demo_state_v2';   // bumped for new builder schema (catalog/testimonials/faq)
 
 const defaultState = () => ({
   view: 'landing',
@@ -255,13 +255,31 @@ const defaultState = () => ({
 
 let state;
 
+// Recursive shallow-per-key merge: keeps saved fields where present,
+// backfills any newly-added default fields, ignores nulls/arrays as objects.
+function deepMerge(base, patch) {
+  if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) return patch;
+  const out = { ...base };
+  for (const key of Object.keys(patch)) {
+    const b = base ? base[key] : undefined;
+    const p = patch[key];
+    if (b && typeof b === 'object' && !Array.isArray(b) && p && typeof p === 'object' && !Array.isArray(p)) {
+      out[key] = deepMerge(b, p);
+    } else {
+      out[key] = p;
+    }
+  }
+  return out;
+}
+
 function loadState() {
   try {
     const s = localStorage.getItem(LS_KEY);
     if (s) {
       const p = JSON.parse(s);
-      state = { ...defaultState(), ...p };
+      state = deepMerge(defaultState(), p);
       state.chat.typing = false;   // never persist transient flags
+      state.botSim = null;         // never resume modals from LS
     } else {
       state = defaultState();
     }
@@ -1113,6 +1131,13 @@ function renderTemplates() {
 //  SCREEN: TEMPLATE BUILDER (with LIVE preview)
 // ═══════════════════════════════════════════════════════════════════════════
 function renderBuilder() {
+  // Backfill any missing subtrees (protects against stale/partial state)
+  const defaults = defaultState().builder;
+  if (!state.builder.mode)          state.builder.mode = defaults.mode;
+  if (!state.builder.activeSection) state.builder.activeSection = defaults.activeSection;
+  if (!state.builder.config)        state.builder.config = defaults.config;
+  if (!state.builder.catalog)       state.builder.catalog = defaults.catalog;
+
   const mode = state.builder.mode;
   const isLanding = mode === 'landing';
   const c = isLanding ? state.builder.config : state.builder.catalog;
@@ -1461,6 +1486,7 @@ function renderLandingPreview() {
 
 // ─── Live preview: catalog mini-app (phone-shaped) ─────────────────────────
 function renderCatalogPreview() {
+  if (!state.builder.catalog) state.builder.catalog = defaultState().builder.catalog;
   const c = state.builder.catalog;
   const brand = c.brand.primaryColor;
   const activeCat = c.categories.find(x => x.active) || c.categories[0];
