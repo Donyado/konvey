@@ -202,13 +202,51 @@ const defaultState = () => ({
   },
   templates: { filter: 'all' },
   builder: {
+    mode: 'landing',                 // 'landing' | 'catalog'
     config: {
-      brand: { name:'Mira Studio', primaryColor:'#7C3AED' },
-      hero:  { title:'Фотостудия в центре Москвы', subtitle:'Студийная и outdoor-съёмка' },
-      services: ['Портрет','Семья','Love story','Lookbook'],
-      cta: 'Записаться',
+      brand: { name:'Mira Studio', logo:null, primaryColor:'#7C3AED' },
+      hero: {
+        badge:'Фотостудия с 2018 года',
+        title:'Фотостудия в центре Москвы',
+        subtitle:'Студийная и outdoor-съёмка. Оборудование, свет, стилист — всё включено.',
+        image:null,                  // dataURL
+        cta:'Записаться',
+      },
+      services: [
+        { id:'s1', name:'Портрет',    price:'от 5 000 ₽', icon:null, desc:'Индивидуальная съёмка' },
+        { id:'s2', name:'Семья',      price:'от 8 000 ₽', icon:null, desc:'Семейные истории'  },
+        { id:'s3', name:'Love story', price:'от 12 000 ₽', icon:null, desc:'Романтическая съёмка' },
+        { id:'s4', name:'Lookbook',   price:'от 15 000 ₽', icon:null, desc:'Съёмка для бренда' },
+      ],
+      testimonials: [
+        { id:'r1', author:'Анна П.',  role:'Клиент',     avatar:null, text:'Съёмка была невероятной. Фотограф уловил каждую эмоцию.' },
+        { id:'r2', author:'Максим К.', role:'Клиент',    avatar:null, text:'Заказали love story — результат превзошёл ожидания.' },
+      ],
+      faq: [
+        { id:'f1', q:'Сколько длится съёмка?',            a:'От 1 часа до 4 часов в зависимости от формата.' },
+        { id:'f2', q:'Когда получу готовые фотографии?', a:'Обработанные снимки — в течение 7 дней после съёмки.' },
+        { id:'f3', q:'Можно ли перенести дату?',          a:'Да, бесплатно за 48 часов, дальше 30% предоплаты.' },
+      ],
+      contacts: { phone:'+7 (495) 123-45-67', email:'hello@mira-studio.ru', address:'Москва, Большая Никитская, 10' },
+      sections: { services:true, testimonials:true, faq:true, contacts:true },
+    },
+    catalog: {
+      brand: { name:'Магазин лампочек', logo:null, primaryColor:'#F59E0B' },
+      categories: [
+        { id:'c1', name:'Всё', active:true },
+        { id:'c2', name:'LED', active:false },
+        { id:'c3', name:'Умные', active:false },
+      ],
+      products: [
+        { id:'p1', name:'LED Filament 8W', price:390, image:null, category:'c2' },
+        { id:'p2', name:'Умная лампа RGB', price:1290, image:null, category:'c3' },
+        { id:'p3', name:'Уличная 30W',     price:2450, image:null, category:'c2' },
+        { id:'p4', name:'Свеча декор',     price:580,  image:null, category:'c2' },
+      ],
+      cart: [],
     },
     busy: false,
+    activeSection: 'brand',           // sidebar tab
   },
   marketplace: { installing: null, step: 1, installed: [] },
   audit: { tab: 'all', log: JSON.parse(JSON.stringify(defaultAuditLog)) },
@@ -234,8 +272,12 @@ function loadState() {
 }
 
 function saveState() {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
-  catch (e) { /* ignore */ }
+  try {
+    // Do NOT persist transient/bulky things
+    const { botSim, ...persisted } = state;
+    if (persisted.chat) persisted.chat = { ...persisted.chat, typing: false };
+    localStorage.setItem(LS_KEY, JSON.stringify(persisted));
+  } catch (e) { /* ignore quota errors — images can be big */ }
 }
 
 function resetState() {
@@ -314,6 +356,93 @@ function Logo(size='md') {
     <div class="rounded-lg bg-gradient-to-br from-brand-400 via-brand-600 to-indigo-700 flex items-center justify-center text-white font-black glow-violet ${big?'h-10 w-10 text-lg':'h-8 w-8 text-sm'}">K</div>
     <div class="font-bold tracking-tight ${big?'text-2xl':'text-base'}">Konvey</div>
   </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  IMAGE COMPRESSION  (client-side, canvas-based — same algo as apps/web)
+// ═══════════════════════════════════════════════════════════════════════════
+async function compressImage(file, { maxDim = 1400, quality = 0.82 } = {}) {
+  if (!file || !file.type.startsWith('image/')) throw new Error('Не изображение');
+  if (file.size > 25 * 1024 * 1024) throw new Error('Файл больше 25 MB');
+  const dataUrl = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(new Error('Не удалось прочитать файл'));
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error('Файл не является корректным изображением'));
+    i.src = dataUrl;
+  });
+  let { width, height } = img;
+  if (width > maxDim || height > maxDim) {
+    const scale = maxDim / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+const IMG_PRESETS = {
+  logo:   { maxDim: 400,  quality: 0.9,  aspect: 'aspect-square' },
+  cover:  { maxDim: 1600, quality: 0.8,  aspect: 'aspect-[16/6]' },
+  wide:   { maxDim: 1400, quality: 0.82, aspect: 'aspect-[4/3]' },
+  square: { maxDim: 600,  quality: 0.82, aspect: 'aspect-square' },
+};
+
+// Uploader — a compact drag/click field that stores dataURL into state via path
+function ImageUploader({ path, label, variant='square', hint='' }) {
+  const preset = IMG_PRESETS[variant];
+  const current = getPath(state, path);
+  const id = 'up-' + path.replace(/\./g, '-');
+  return `<div class="space-y-2">
+    <div class="flex items-center justify-between">
+      <span class="text-xs text-ink-400">${esc(label)}</span>
+      ${current ? `<button data-action="clearImage" data-arg="${path}" class="text-[10px] text-rose-400 hover:text-rose-300">удалить</button>` : ''}
+    </div>
+    <label for="${id}" class="block cursor-pointer">
+      <div class="${preset.aspect} w-full rounded-lg border-2 border-dashed border-ink-700 hover:border-brand-500/60 hover:bg-brand-600/5 transition overflow-hidden bg-ink-900 flex items-center justify-center relative">
+        ${current
+          ? `<img src="${current}" class="absolute inset-0 w-full h-full object-cover" alt="">
+             <div class="absolute inset-0 bg-black/0 hover:bg-black/40 transition flex items-center justify-center text-xs text-white opacity-0 hover:opacity-100">Заменить</div>`
+          : `<div class="text-center px-4">
+              <div class="text-ink-500 mb-1">${I.download(20)}</div>
+              <div class="text-[11px] text-ink-500">Кликните или перетащите</div>
+              ${hint ? `<div class="text-[10px] text-ink-600 mt-0.5">${esc(hint)}</div>` : ''}
+             </div>`}
+      </div>
+    </label>
+    <input id="${id}" type="file" accept="image/*" data-upload="${path}" data-variant="${variant}" class="hidden">
+  </div>`;
+}
+
+// Get/Set nested path helpers
+function getPath(obj, path) {
+  return path.split('.').reduce((cur, key) => {
+    if (cur == null) return undefined;
+    const m = key.match(/^(\w+)\[(\d+)\]$/);
+    if (m) return cur[m[1]]?.[+m[2]];
+    return cur[key];
+  }, obj);
+}
+function setPath(obj, path, value) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const p = parts[i];
+    const m = p.match(/^(\w+)\[(\d+)\]$/);
+    cur = m ? cur[m[1]][+m[2]] : cur[p];
+  }
+  const last = parts[parts.length - 1];
+  const m = last.match(/^(\w+)\[(\d+)\]$/);
+  if (m) cur[m[1]][+m[2]] = value; else cur[last] = value;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -984,113 +1113,414 @@ function renderTemplates() {
 //  SCREEN: TEMPLATE BUILDER (with LIVE preview)
 // ═══════════════════════════════════════════════════════════════════════════
 function renderBuilder() {
-  const c = state.builder.config;
-  const presets = ['Поменяй акцент на зелёный', 'Замени заголовок на "Фотостудия в Питере"', 'Добавь услугу "Предметная съёмка"'];
+  const mode = state.builder.mode;
+  const isLanding = mode === 'landing';
+  const c = isLanding ? state.builder.config : state.builder.catalog;
+  const active = state.builder.activeSection;
+
+  const sections = isLanding
+    ? [
+        { id:'brand',        label:'Бренд',    icon:'sparkles' },
+        { id:'hero',         label:'Hero',     icon:'layout' },
+        { id:'services',     label:'Услуги',   icon:'layers' },
+        { id:'testimonials', label:'Отзывы',   icon:'user' },
+        { id:'faq',          label:'FAQ',      icon:'message' },
+        { id:'contacts',     label:'Контакты', icon:'plug' },
+        { id:'visibility',   label:'Секции',   icon:'eye' },
+        { id:'ai',           label:'AI',       icon:'brain' },
+      ]
+    : [
+        { id:'brand',      label:'Бренд',     icon:'sparkles' },
+        { id:'categories', label:'Категории', icon:'layers' },
+        { id:'products',   label:'Товары',    icon:'store' },
+        { id:'ai',         label:'AI',        icon:'brain' },
+      ];
 
   return `<div class="flex h-[calc(100vh-4rem)]">
-    <div class="w-80 border-r border-ink-800 bg-ink-950/40 flex flex-col">
+    <div class="w-96 border-r border-ink-800 bg-ink-950/40 flex flex-col">
       <div class="p-4 border-b border-ink-800">
         <div class="text-xs text-ink-500 mb-1">Шаблон</div>
-        <div class="font-semibold">Лендинг услуг</div>
+        <div class="font-semibold">${isLanding ? 'Лендинг услуг' : 'Каталог товаров (mini app)'}</div>
         <div class="text-xs text-ink-500 mt-1">draft · версия конфига 1</div>
+        <div class="mt-3 grid grid-cols-2 gap-1 p-0.5 bg-ink-900 rounded-lg">
+          <button data-action="builderSetMode" data-arg="landing" class="text-xs px-3 py-1.5 rounded-md ${isLanding?'bg-brand-600/20 text-brand-200':'text-ink-400 hover:text-ink-200'}">Лендинг</button>
+          <button data-action="builderSetMode" data-arg="catalog" class="text-xs px-3 py-1.5 rounded-md ${!isLanding?'bg-brand-600/20 text-brand-200':'text-ink-400 hover:text-ink-200'}">Каталог-mini</button>
+        </div>
       </div>
+
+      <div class="border-b border-ink-800 flex overflow-x-auto scrollbar-hide">
+        ${sections.map(s => `<button data-action="builderSetSection" data-arg="${s.id}" class="flex flex-col items-center gap-1 px-3 py-2 text-[10px] font-medium border-b-2 transition shrink-0 ${active===s.id?'text-brand-300 border-brand-500':'text-ink-500 border-transparent hover:text-ink-200'}">
+          ${I[s.icon](14)}${s.label}
+        </button>`).join('')}
+      </div>
+
       <div class="flex-1 overflow-auto p-4 space-y-4">
-        <div>
-          <div class="text-xs text-ink-500 uppercase tracking-wider mb-2 flex items-center gap-1">${I.sparkles(11)} Изменить через AI</div>
-          <div class="space-y-2">
-            ${presets.map(p => `<button data-action="builderPreset" data-arg="${esc(p)}" class="w-full text-left text-xs p-2.5 rounded-lg border border-ink-800 hover:border-brand-500/50 hover:bg-brand-600/5">${p}</button>`).join('')}
-          </div>
-          ${Button({variant:'ghost',size:'sm',className:'w-full justify-center mt-2',action:'go',arg:'chat',children:`${I.message(12)} Открыть полный чат`})}
-        </div>
-
-        <div class="border-t border-ink-800 pt-4">
-          <div class="text-xs text-ink-500 uppercase tracking-wider mb-2">Ручные настройки</div>
-          <div class="space-y-3 text-sm">
-            <label class="block">
-              <span class="text-xs text-ink-400">Название</span>
-              <input data-bind="builder.config.brand.name" value="${esc(c.brand.name)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
-            </label>
-            <label class="block">
-              <span class="text-xs text-ink-400">Заголовок</span>
-              <input data-bind="builder.config.hero.title" value="${esc(c.hero.title)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
-            </label>
-            <label class="block">
-              <span class="text-xs text-ink-400">Подзаголовок</span>
-              <input data-bind="builder.config.hero.subtitle" value="${esc(c.hero.subtitle)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
-            </label>
-            <label class="block">
-              <span class="text-xs text-ink-400">Кнопка</span>
-              <input data-bind="builder.config.cta" value="${esc(c.cta)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
-            </label>
-            <label class="block">
-              <span class="text-xs text-ink-400">Акцентный цвет</span>
-              <div class="mt-1 flex gap-2">
-                ${['#7C3AED','#10B981','#F59E0B','#EF4444','#0EA5E9','#EC4899'].map(col => `<button data-action="builderSetColor" data-arg="${col}" class="h-8 w-8 rounded-lg border-2 transition ${c.brand.primaryColor===col?'border-ink-100':'border-transparent'}" style="background:${col}"></button>`).join('')}
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <div class="border-t border-ink-800 pt-4">
-          <div class="text-xs text-ink-500 uppercase tracking-wider mb-2">Привязка к CRM</div>
-          ${Card({className:'p-3 text-sm',children:`
-            <div class="flex items-center gap-2 mb-1">${ProviderLogo({providerId:'amo',size:20})}<span class="font-medium text-xs">amoCRM</span></div>
-            <div class="text-xs text-ink-500">Воронка: Продажи → статус "Новый лид"</div>
-          `})}
-        </div>
+        ${isLanding ? renderLandingSection(active, c) : renderCatalogSection(active, c)}
       </div>
+
       <div class="p-3 border-t border-ink-800 space-y-2">
-        ${Button({variant:'primary',size:'md',className:'w-full justify-center',action:'go',arg:'deployments',children:`${I.rocket(14)} Задеплоить`})}
-        ${Button({variant:'outline',size:'sm',className:'w-full justify-center',children:`${I.download(14)} Экспорт конфига`})}
+        ${Button({variant:'primary',size:'md',className:'w-full justify-center',action:'openBotSim',children:`${I.rocket(14)} Задеплоить и открыть в TG`})}
+        ${Button({variant:'outline',size:'sm',className:'w-full justify-center',action:'exportConfig',children:`${I.download(14)} Экспорт конфига`})}
       </div>
     </div>
 
     <div class="flex-1 bg-ink-950 overflow-auto">
-      <div class="border-b border-ink-800 p-3 flex items-center justify-between text-sm">
-        <div class="flex items-center gap-2 text-ink-400">${I.eye(14)} Live preview ${Badge({color:'gray',children:'desktop'})}</div>
+      <div class="border-b border-ink-800 p-3 flex items-center justify-between text-sm sticky top-0 bg-ink-950/95 backdrop-blur z-10">
+        <div class="flex items-center gap-2 text-ink-400">${I.eye(14)} Live preview ${Badge({color:'gray',children: isLanding ? 'desktop' : 'mobile'})}</div>
         <div class="flex items-center gap-2">
           ${state.builder.busy ? `<span class="text-xs text-brand-300 flex items-center gap-1"><span class="animate-spin-slow inline-block">${I.sparkles(11)}</span> AI применяет изменения...</span>` : ''}
           ${Badge({color:'yellow',children:'draft'})}
         </div>
       </div>
-      <div id="preview-panel" class="p-8">${renderPreviewCard()}</div>
+      <div id="preview-panel" class="p-6">${isLanding ? renderLandingPreview() : renderCatalogPreview()}</div>
     </div>
   </div>`;
 }
 
-function renderPreviewCard() {
+// ─── Sidebar sections: landing ─────────────────────────────────────────────
+function renderLandingSection(active, c) {
+  if (active === 'ai') {
+    const presets = [
+      'Поменяй акцент на изумрудный',
+      'Замени заголовок на "Фотостудия в Питере"',
+      'Добавь услугу "Предметная съёмка"',
+      'Замени отзывы на более деловые',
+      'Скрой секцию FAQ',
+    ];
+    return `<div class="space-y-2">
+      <div class="text-xs text-ink-500 uppercase tracking-wider mb-1 flex items-center gap-1">${I.sparkles(11)} Что просить у AI</div>
+      ${presets.map(p => `<button data-action="builderPreset" data-arg="${esc(p)}" class="w-full text-left text-xs p-2.5 rounded-lg border border-ink-800 hover:border-brand-500/50 hover:bg-brand-600/5">${p}</button>`).join('')}
+      ${Button({variant:'ghost',size:'sm',className:'w-full justify-center mt-2',action:'go',arg:'chat',children:`${I.message(12)} Открыть полный чат`})}
+    </div>`;
+  }
+
+  if (active === 'brand') {
+    return `<div class="space-y-4">
+      ${ImageUploader({ path:'builder.config.brand.logo', label:'Логотип', variant:'logo', hint:'PNG/JPG до 25 MB' })}
+      <label class="block">
+        <span class="text-xs text-ink-400">Название</span>
+        <input data-bind="builder.config.brand.name" value="${esc(c.brand.name)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+      </label>
+      <div>
+        <span class="text-xs text-ink-400">Акцентный цвет</span>
+        <div class="mt-1 flex gap-2 flex-wrap">
+          ${['#7C3AED','#10B981','#F59E0B','#EF4444','#0EA5E9','#EC4899','#0F172A','#E11D48'].map(col => `<button data-action="builderSetColor" data-arg="${col}" class="h-9 w-9 rounded-lg border-2 transition ${c.brand.primaryColor===col?'border-ink-100':'border-transparent'}" style="background:${col}"></button>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  if (active === 'hero') {
+    return `<div class="space-y-4">
+      ${ImageUploader({ path:'builder.config.hero.image', label:'Фоновое изображение', variant:'cover', hint:'Широкое, 1600×600+' })}
+      <label class="block">
+        <span class="text-xs text-ink-400">Плашка сверху</span>
+        <input data-bind="builder.config.hero.badge" value="${esc(c.hero.badge)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+      </label>
+      <label class="block">
+        <span class="text-xs text-ink-400">Заголовок</span>
+        <input data-bind="builder.config.hero.title" value="${esc(c.hero.title)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+      </label>
+      <label class="block">
+        <span class="text-xs text-ink-400">Подзаголовок</span>
+        <textarea data-bind="builder.config.hero.subtitle" rows="2" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none resize-none">${esc(c.hero.subtitle)}</textarea>
+      </label>
+      <label class="block">
+        <span class="text-xs text-ink-400">Текст кнопки</span>
+        <input data-bind="builder.config.hero.cta" value="${esc(c.hero.cta)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+      </label>
+    </div>`;
+  }
+
+  if (active === 'services') {
+    return `<div class="space-y-3">
+      ${c.services.map((s, idx) => `<div class="p-3 rounded-lg border border-ink-800 space-y-2 bg-ink-900/50">
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-ink-400">Услуга ${idx+1}</div>
+          <button data-action="removeService" data-arg="${s.id}" class="text-[10px] text-rose-400 hover:text-rose-300">удалить</button>
+        </div>
+        ${ImageUploader({ path:`builder.config.services[${idx}].icon`, label:'Иконка', variant:'square', hint:'Квадратная, 200×200+' })}
+        <input data-bind="builder.config.services[${idx}].name" value="${esc(s.name)}" placeholder="Название" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+        <input data-bind="builder.config.services[${idx}].price" value="${esc(s.price)}" placeholder="Цена" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+        <input data-bind="builder.config.services[${idx}].desc" value="${esc(s.desc)}" placeholder="Описание" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+      </div>`).join('')}
+      ${Button({variant:'outline',size:'sm',className:'w-full justify-center',action:'addService',children:`${I.plus(14)} Добавить услугу`})}
+    </div>`;
+  }
+
+  if (active === 'testimonials') {
+    return `<div class="space-y-3">
+      ${c.testimonials.map((r, idx) => `<div class="p-3 rounded-lg border border-ink-800 space-y-2 bg-ink-900/50">
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-ink-400">Отзыв ${idx+1}</div>
+          <button data-action="removeTestimonial" data-arg="${r.id}" class="text-[10px] text-rose-400 hover:text-rose-300">удалить</button>
+        </div>
+        ${ImageUploader({ path:`builder.config.testimonials[${idx}].avatar`, label:'Фото автора', variant:'square' })}
+        <input data-bind="builder.config.testimonials[${idx}].author" value="${esc(r.author)}" placeholder="Имя" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+        <input data-bind="builder.config.testimonials[${idx}].role" value="${esc(r.role)}" placeholder="Кто он?" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+        <textarea data-bind="builder.config.testimonials[${idx}].text" rows="3" placeholder="Текст отзыва" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none resize-none">${esc(r.text)}</textarea>
+      </div>`).join('')}
+      ${Button({variant:'outline',size:'sm',className:'w-full justify-center',action:'addTestimonial',children:`${I.plus(14)} Добавить отзыв`})}
+    </div>`;
+  }
+
+  if (active === 'faq') {
+    return `<div class="space-y-3">
+      ${c.faq.map((f, idx) => `<div class="p-3 rounded-lg border border-ink-800 space-y-2 bg-ink-900/50">
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-ink-400">Вопрос ${idx+1}</div>
+          <button data-action="removeFaq" data-arg="${f.id}" class="text-[10px] text-rose-400 hover:text-rose-300">удалить</button>
+        </div>
+        <input data-bind="builder.config.faq[${idx}].q" value="${esc(f.q)}" placeholder="Вопрос" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+        <textarea data-bind="builder.config.faq[${idx}].a" rows="3" placeholder="Ответ" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none resize-none">${esc(f.a)}</textarea>
+      </div>`).join('')}
+      ${Button({variant:'outline',size:'sm',className:'w-full justify-center',action:'addFaq',children:`${I.plus(14)} Добавить вопрос`})}
+    </div>`;
+  }
+
+  if (active === 'contacts') {
+    return `<div class="space-y-3">
+      <label class="block">
+        <span class="text-xs text-ink-400">Телефон</span>
+        <input data-bind="builder.config.contacts.phone" value="${esc(c.contacts.phone)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+      </label>
+      <label class="block">
+        <span class="text-xs text-ink-400">Email</span>
+        <input data-bind="builder.config.contacts.email" value="${esc(c.contacts.email)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+      </label>
+      <label class="block">
+        <span class="text-xs text-ink-400">Адрес</span>
+        <textarea data-bind="builder.config.contacts.address" rows="2" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none resize-none">${esc(c.contacts.address)}</textarea>
+      </label>
+      <div class="pt-3 border-t border-ink-800">
+        <div class="text-xs text-ink-500 mb-2">Привязка к CRM</div>
+        ${Card({className:'p-3 text-sm',children:`
+          <div class="flex items-center gap-2 mb-1">${ProviderLogo({providerId:'amo',size:20})}<span class="font-medium text-xs">amoCRM</span></div>
+          <div class="text-xs text-ink-500">Воронка: Продажи → статус "Новый лид"</div>
+        `})}
+      </div>
+    </div>`;
+  }
+
+  if (active === 'visibility') {
+    const opts = [
+      { id:'services',     label:'Услуги' },
+      { id:'testimonials', label:'Отзывы' },
+      { id:'faq',          label:'FAQ' },
+      { id:'contacts',     label:'Контакты' },
+    ];
+    return `<div class="space-y-2">
+      <div class="text-xs text-ink-500 uppercase tracking-wider mb-2">Отображение секций</div>
+      ${opts.map(o => `<label class="flex items-center gap-3 p-3 rounded-lg border border-ink-800 cursor-pointer hover:border-ink-700">
+        <input type="checkbox" data-toggle="builder.config.sections.${o.id}" ${c.sections[o.id]?'checked':''} class="h-4 w-4 accent-brand-500">
+        <span class="text-sm">${o.label}</span>
+      </label>`).join('')}
+    </div>`;
+  }
+
+  return '';
+}
+
+// ─── Sidebar sections: catalog ─────────────────────────────────────────────
+function renderCatalogSection(active, c) {
+  if (active === 'ai') {
+    return `<div class="space-y-2">
+      <div class="text-xs text-ink-500 uppercase tracking-wider mb-1 flex items-center gap-1">${I.sparkles(11)} Что просить у AI</div>
+      ${[
+        'Поменяй акцент на синий',
+        'Переименуй магазин в "Bright Lights"',
+        'Добавь категорию "Декор"',
+      ].map(p => `<button data-action="builderPreset" data-arg="${esc(p)}" class="w-full text-left text-xs p-2.5 rounded-lg border border-ink-800 hover:border-brand-500/50 hover:bg-brand-600/5">${p}</button>`).join('')}
+    </div>`;
+  }
+  if (active === 'brand') {
+    return `<div class="space-y-4">
+      ${ImageUploader({ path:'builder.catalog.brand.logo', label:'Логотип', variant:'logo' })}
+      <label class="block">
+        <span class="text-xs text-ink-400">Название магазина</span>
+        <input data-bind="builder.catalog.brand.name" value="${esc(c.brand.name)}" class="mt-1 w-full bg-ink-900 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+      </label>
+      <div>
+        <span class="text-xs text-ink-400">Акцентный цвет</span>
+        <div class="mt-1 flex gap-2 flex-wrap">
+          ${['#F59E0B','#10B981','#7C3AED','#EF4444','#0EA5E9','#EC4899'].map(col => `<button data-action="builderSetColor" data-arg="${col}" class="h-9 w-9 rounded-lg border-2 transition ${c.brand.primaryColor===col?'border-ink-100':'border-transparent'}" style="background:${col}"></button>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }
+  if (active === 'categories') {
+    return `<div class="space-y-2">
+      ${c.categories.map((cat, idx) => `<div class="p-2.5 rounded-lg border border-ink-800 flex items-center gap-2">
+        <input data-bind="builder.catalog.categories[${idx}].name" value="${esc(cat.name)}" class="flex-1 bg-transparent text-sm outline-none">
+        <button data-action="removeCategory" data-arg="${cat.id}" class="text-[10px] text-rose-400">×</button>
+      </div>`).join('')}
+      ${Button({variant:'outline',size:'sm',className:'w-full justify-center',action:'addCategory',children:`${I.plus(14)} Добавить`})}
+    </div>`;
+  }
+  if (active === 'products') {
+    return `<div class="space-y-3">
+      ${c.products.map((p, idx) => `<div class="p-3 rounded-lg border border-ink-800 space-y-2 bg-ink-900/50">
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-ink-400">Товар ${idx+1}</div>
+          <button data-action="removeProduct" data-arg="${p.id}" class="text-[10px] text-rose-400 hover:text-rose-300">удалить</button>
+        </div>
+        ${ImageUploader({ path:`builder.catalog.products[${idx}].image`, label:'Фото товара', variant:'square' })}
+        <input data-bind="builder.catalog.products[${idx}].name" value="${esc(p.name)}" placeholder="Название" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+        <input data-bind="builder.catalog.products[${idx}].price" value="${p.price}" placeholder="Цена" type="number" class="w-full bg-ink-950 border border-ink-800 rounded-lg px-3 py-2 text-sm focus:border-brand-500 outline-none">
+      </div>`).join('')}
+      ${Button({variant:'outline',size:'sm',className:'w-full justify-center',action:'addProduct',children:`${I.plus(14)} Добавить товар`})}
+    </div>`;
+  }
+  return '';
+}
+
+// ─── Live preview: full landing with all sections ──────────────────────────
+function renderLandingPreview() {
   const c = state.builder.config;
-  return `<div class="max-w-4xl mx-auto bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden">
+  const brand = c.brand.primaryColor;
+  const nav = ['Услуги', c.sections.testimonials?'Отзывы':null, c.sections.faq?'FAQ':null, c.sections.contacts?'Контакты':null].filter(Boolean);
+  return `<div class="max-w-5xl mx-auto bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden">
     <div class="px-8 py-4 border-b flex justify-between items-center" style="border-color:#E2E8F0">
       <div class="flex items-center gap-2">
-        <div class="h-7 w-7 rounded-lg" style="background:${c.brand.primaryColor}"></div>
+        ${c.brand.logo
+          ? `<img src="${c.brand.logo}" class="h-8 w-8 rounded-lg object-cover" alt="">`
+          : `<div class="h-8 w-8 rounded-lg" style="background:${brand}"></div>`}
         <div class="font-bold text-lg" style="color:#0F172A">${esc(c.brand.name)}</div>
       </div>
-      <div class="hidden md:flex gap-5 text-sm" style="color:#475569"><span>Услуги</span><span>Портфолио</span><span>Контакты</span></div>
-      <button class="text-xs font-semibold text-white px-4 py-2 rounded-lg" style="background:${c.brand.primaryColor}">${esc(c.cta)}</button>
+      <div class="hidden md:flex gap-5 text-sm" style="color:#475569">${nav.map(n=>`<span>${n}</span>`).join('')}</div>
+      <button class="text-xs font-semibold text-white px-4 py-2 rounded-lg" style="background:${brand}">${esc(c.hero.cta)}</button>
     </div>
-    <div class="px-8 py-16 text-center">
-      <div class="inline-block px-3 py-1 text-[11px] font-semibold rounded-full mb-4" style="background:#F1F5F9;color:#475569">Фотостудия с 2018 года</div>
-      <h1 class="text-4xl md:text-5xl font-extrabold mb-4 leading-tight" style="color:#0F172A">${esc(c.hero.title)}</h1>
-      <p class="text-lg max-w-xl mx-auto mb-8" style="color:#475569">${esc(c.hero.subtitle)}</p>
-      <button class="text-white font-semibold px-7 py-3 rounded-xl shadow-lg" style="background:${c.brand.primaryColor}">${esc(c.cta)}</button>
+    <div class="relative px-8 py-20 text-center overflow-hidden ${c.hero.image?'text-white':''}" ${c.hero.image?`style="background-image:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.35)),url('${c.hero.image}');background-size:cover;background-position:center"`:''}>
+      ${c.hero.badge?`<div class="inline-block px-3 py-1 text-[11px] font-semibold rounded-full mb-4" style="background:${c.hero.image?'rgba(255,255,255,.15)':'#F1F5F9'};color:${c.hero.image?'white':'#475569'}">${esc(c.hero.badge)}</div>`:''}
+      <h1 class="text-4xl md:text-5xl font-extrabold mb-4 leading-tight" ${c.hero.image?'':'style="color:#0F172A"'}>${esc(c.hero.title)}</h1>
+      <p class="text-lg max-w-xl mx-auto mb-8" ${c.hero.image?'style="color:#E2E8F0"':'style="color:#475569"'}>${esc(c.hero.subtitle)}</p>
+      <button class="text-white font-semibold px-8 py-3 rounded-xl shadow-lg" style="background:${brand}">${esc(c.hero.cta)}</button>
     </div>
-    <div class="px-8 py-12" style="background:#F8FAFC">
-      <div class="text-center font-bold text-xl mb-8" style="color:#0F172A">Услуги</div>
+    ${c.sections.services?`<div class="px-8 py-14" style="background:#F8FAFC">
+      <div class="text-center font-bold text-2xl mb-8" style="color:#0F172A">Услуги</div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        ${c.services.map(s => `<div class="bg-white p-5 rounded-xl text-center" style="box-shadow:0 2px 6px rgba(15,23,42,.04)">
-          <div class="h-10 w-10 mx-auto mb-3 rounded-lg" style="background:${c.brand.primaryColor}20"></div>
-          <div class="font-semibold text-sm" style="color:#0F172A">${esc(s)}</div>
-          <div class="text-xs mt-1" style="color:#94A3B8">от 5 000 ₽</div>
+        ${c.services.map(s => `<div class="bg-white p-5 rounded-xl text-center" style="box-shadow:0 2px 10px rgba(15,23,42,.05)">
+          ${s.icon
+            ? `<img src="${s.icon}" class="h-14 w-14 mx-auto mb-3 rounded-lg object-cover" alt="">`
+            : `<div class="h-14 w-14 mx-auto mb-3 rounded-lg flex items-center justify-center" style="background:${brand}18;color:${brand}">${I.sparkles(24)}</div>`}
+          <div class="font-semibold text-sm mb-1" style="color:#0F172A">${esc(s.name)}</div>
+          <div class="text-xs mb-2" style="color:#94A3B8">${esc(s.desc)}</div>
+          <div class="text-sm font-semibold" style="color:${brand}">${esc(s.price)}</div>
         </div>`).join('')}
       </div>
-    </div>
-    <div class="px-8 py-10 text-center" style="background:${c.brand.primaryColor}">
-      <div class="font-bold text-2xl text-white mb-3">Готов к съёмке?</div>
-      <button class="bg-white font-semibold px-7 py-3 rounded-xl" style="color:${c.brand.primaryColor}">Оставить заявку</button>
+    </div>`:''}
+    ${c.sections.testimonials?`<div class="px-8 py-14">
+      <div class="text-center font-bold text-2xl mb-8" style="color:#0F172A">Отзывы клиентов</div>
+      <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        ${c.testimonials.map(r => `<div class="p-5 rounded-xl border" style="border-color:#E2E8F0">
+          <div class="flex items-center gap-3 mb-3">
+            ${r.avatar
+              ? `<img src="${r.avatar}" class="h-11 w-11 rounded-full object-cover" alt="">`
+              : `<div class="h-11 w-11 rounded-full flex items-center justify-center font-bold text-white text-sm" style="background:${brand}">${esc((r.author||'?')[0])}</div>`}
+            <div>
+              <div class="font-semibold text-sm" style="color:#0F172A">${esc(r.author)}</div>
+              <div class="text-xs" style="color:#94A3B8">${esc(r.role)}</div>
+            </div>
+          </div>
+          <div class="text-sm leading-relaxed" style="color:#475569">«${esc(r.text)}»</div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+    ${c.sections.faq?`<div class="px-8 py-14" style="background:#F8FAFC">
+      <div class="text-center font-bold text-2xl mb-8" style="color:#0F172A">Частые вопросы</div>
+      <div class="max-w-2xl mx-auto space-y-3">
+        ${c.faq.map(f => `<div class="p-4 bg-white rounded-xl" style="box-shadow:0 1px 4px rgba(15,23,42,.04)">
+          <div class="font-semibold mb-1 text-sm" style="color:#0F172A">${esc(f.q)}</div>
+          <div class="text-sm" style="color:#475569">${esc(f.a)}</div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+    ${c.sections.contacts?`<div class="px-8 py-14 grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <div>
+        <div class="font-bold text-2xl mb-4" style="color:#0F172A">Свяжитесь с нами</div>
+        <div class="space-y-2 text-sm" style="color:#475569">
+          <div>📍 ${esc(c.contacts.address)}</div>
+          <div>☎ ${esc(c.contacts.phone)}</div>
+          <div>✉ ${esc(c.contacts.email)}</div>
+        </div>
+      </div>
+      <div class="p-5 rounded-xl border" style="border-color:#E2E8F0">
+        <div class="text-sm font-semibold mb-3" style="color:#0F172A">Оставить заявку</div>
+        <input placeholder="Имя" class="w-full mb-2 px-3 py-2 rounded-lg text-sm border" style="border-color:#E2E8F0;color:#0F172A">
+        <input placeholder="Телефон" class="w-full mb-2 px-3 py-2 rounded-lg text-sm border" style="border-color:#E2E8F0;color:#0F172A">
+        <button class="w-full text-white text-sm font-semibold py-2.5 rounded-lg" style="background:${brand}">Отправить</button>
+      </div>
+    </div>`:''}
+    <div class="px-8 py-10 text-center" style="background:${brand}">
+      <div class="font-bold text-2xl text-white mb-3">Готовы попробовать?</div>
+      <button class="bg-white font-semibold px-7 py-3 rounded-xl" style="color:${brand}">${esc(c.hero.cta)}</button>
     </div>
   </div>
-  <div class="text-center mt-6 text-xs text-ink-500">Заявки уйдут в amoCRM → воронка "Продажи" → статус "Новый лид"</div>`;
+  <div class="text-center mt-4 text-xs text-ink-500">Заявки уйдут в amoCRM → воронка "Продажи" → статус "Новый лид"</div>`;
+}
+
+// ─── Live preview: catalog mini-app (phone-shaped) ─────────────────────────
+function renderCatalogPreview() {
+  const c = state.builder.catalog;
+  const brand = c.brand.primaryColor;
+  const activeCat = c.categories.find(x => x.active) || c.categories[0];
+  const products = activeCat && activeCat.id !== 'c1'
+    ? c.products.filter(p => p.category === activeCat.id)
+    : c.products;
+  const cartCount = c.cart.reduce((n,i)=>n+i.qty,0);
+  const cartTotal = c.cart.reduce((sum, item) => {
+    const p = c.products.find(x => x.id === item.productId);
+    return sum + (p ? p.price * item.qty : 0);
+  }, 0);
+
+  return `<div class="max-w-sm mx-auto">
+    <div class="rounded-[36px] bg-black p-2 shadow-2xl mx-auto" style="width:380px">
+      <div class="rounded-[28px] bg-white overflow-hidden" style="height:720px">
+        <div class="h-8 flex items-center justify-center text-[10px] font-semibold" style="color:#0F172A">9:41</div>
+        <div class="px-4 py-3 flex items-center justify-between border-b" style="border-color:#F1F5F9">
+          <div class="flex items-center gap-2">
+            ${c.brand.logo
+              ? `<img src="${c.brand.logo}" class="h-8 w-8 rounded-lg object-cover" alt="">`
+              : `<div class="h-8 w-8 rounded-lg" style="background:${brand}"></div>`}
+            <div class="font-bold text-sm" style="color:#0F172A">${esc(c.brand.name)}</div>
+          </div>
+          <button class="relative p-2 rounded-lg" style="color:${brand}">
+            ${I.store(20)}
+            ${cartCount?`<div class="absolute -top-1 -right-1 h-4 w-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center" style="background:${brand}">${cartCount}</div>`:''}
+          </button>
+        </div>
+        <div class="px-4 py-3 flex gap-2 overflow-x-auto scrollbar-hide border-b" style="border-color:#F1F5F9">
+          ${c.categories.map(cat => `<button data-action="catalogSetCategory" data-arg="${cat.id}" class="whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition ${cat.active?'text-white':'text-slate-600'}" style="background:${cat.active?brand:'#F1F5F9'}">${esc(cat.name)}</button>`).join('')}
+        </div>
+        <div class="p-4 grid grid-cols-2 gap-3 overflow-auto" style="height:calc(720px - 32px - 60px - 55px - 60px)">
+          ${products.map(p => {
+            const inCart = c.cart.find(x => x.productId === p.id);
+            return `<div class="rounded-xl border overflow-hidden flex flex-col" style="border-color:#F1F5F9">
+              <div class="aspect-square" style="background:${p.image?'transparent':'#F8FAFC'}">
+                ${p.image
+                  ? `<img src="${p.image}" class="w-full h-full object-cover" alt="">`
+                  : `<div class="w-full h-full flex items-center justify-center" style="color:${brand}80">${I.sparkles(28)}</div>`}
+              </div>
+              <div class="p-2.5 flex-1 flex flex-col justify-between">
+                <div class="text-[11px] font-semibold leading-tight mb-1" style="color:#0F172A">${esc(p.name)}</div>
+                <div class="flex items-center justify-between">
+                  <div class="text-xs font-bold" style="color:${brand}">${fmt(p.price)} ₽</div>
+                  <button data-action="catalogAddToCart" data-arg="${p.id}" class="h-6 w-6 rounded-full text-white text-xs font-bold" style="background:${brand}">${inCart?inCart.qty:'+'}</button>
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        ${c.cart.length?`<div class="p-3 border-t" style="border-color:#F1F5F9">
+          <button data-action="catalogCheckout" class="w-full flex items-center justify-between text-white px-4 py-2.5 rounded-xl text-sm font-semibold" style="background:${brand}">
+            <span>Оформить заказ</span>
+            <span>${fmt(cartTotal)} ₽</span>
+          </button>
+        </div>`:`<div class="p-3 border-t text-center text-xs" style="border-color:#F1F5F9;color:#94A3B8">Корзина пуста</div>`}
+      </div>
+    </div>
+    <div class="text-center mt-4 text-xs text-ink-500">Заказ уйдёт в amoCRM → сделка с составом товаров</div>
+  </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1469,15 +1899,24 @@ const screens = {
 
 function render() {
   const app = document.getElementById('app');
+  let content;
   if (state.view === 'landing') {
-    app.innerHTML = renderLanding();
+    content = renderLanding();
   } else {
     const screen = screens[state.view] || renderDashboard;
-    app.innerHTML = `<div class="flex h-screen">${Sidebar()}<main class="flex-1 flex flex-col overflow-hidden">${TopBar()}<div class="flex-1 overflow-auto">${screen()}</div></main></div>`;
+    content = `<div class="flex h-screen">${Sidebar()}<main class="flex-1 flex flex-col overflow-hidden">${TopBar()}<div class="flex-1 overflow-auto">${screen()}</div></main></div>`;
   }
-  // Post-render: scroll chat to bottom, focus inputs where needed
+  // Overlay modals rendered on top
+  const overlays = (state.botSim && state.botSim.open) ? renderBotSimModal() : '';
+  app.innerHTML = content + overlays;
+  // Post-render: scroll chat + bot sim to bottom
   const chatScroll = document.getElementById('chat-scroll');
   if (chatScroll) chatScroll.scrollTop = chatScroll.scrollHeight;
+  const botScroll = document.getElementById('botsim-scroll');
+  if (botScroll) botScroll.scrollTop = botScroll.scrollHeight;
+  // Autofocus prompt in bot sim
+  const botInput = document.getElementById('botsim-input');
+  if (botInput && !botInput.disabled) botInput.focus();
   saveState();
 }
 
@@ -1560,19 +1999,133 @@ const actions = {
   // Templates
   setTemplateFilter: (id) => { state.templates.filter = id; render(); },
 
-  // Builder
-  builderSetColor: (color) => { state.builder.config.brand.primaryColor = color; render(); },
+  // Builder — mode + section navigation
+  builderSetMode: (m) => { state.builder.mode = m; state.builder.activeSection = 'brand'; render(); },
+  builderSetSection: (id) => { state.builder.activeSection = id; render(); },
+
+  // Builder — brand
+  builderSetColor: (color) => {
+    if (state.builder.mode === 'landing') state.builder.config.brand.primaryColor = color;
+    else state.builder.catalog.brand.primaryColor = color;
+    render();
+  },
+
+  // Builder — AI presets (extended)
   builderPreset: (text) => {
     state.builder.busy = true;
     render();
     setTimeout(() => {
-      const c = state.builder.config;
-      if (text.includes('зелёный')) c.brand.primaryColor = '#10B981';
-      if (text.includes('Питере'))  c.hero.title = 'Фотостудия в Питере';
-      if (text.includes('Предмет')) c.services = [...c.services, 'Предметная'];
+      const isLanding = state.builder.mode === 'landing';
+      const c = isLanding ? state.builder.config : state.builder.catalog;
+      const t = text.toLowerCase();
+      if (t.includes('изумруд') || t.includes('зелён')) c.brand.primaryColor = '#10B981';
+      if (t.includes('син'))                            c.brand.primaryColor = '#0EA5E9';
+      if (isLanding && t.includes('питере'))            c.hero.title = 'Фотостудия в Питере';
+      if (isLanding && t.includes('предмет'))
+        c.services = [...c.services, { id:'s'+Date.now(), name:'Предметная съёмка', price:'от 7 000 ₽', icon:null, desc:'Съёмка товаров' }];
+      if (isLanding && t.includes('деловые'))
+        c.testimonials = [
+          { id:'r'+Date.now(),   author:'Николай С.', role:'Founder, ProDesign', avatar:null, text:'Команда отработала как швейцарские часы. Съёмка для каталога — точно, в срок, без правок.' },
+          { id:'r'+Date.now()+1, author:'Мария В.',  role:'Marketing, RetailX',  avatar:null, text:'Сотрудничаем уже год. Стабильно высокое качество, чёткие сроки, разумные бюджеты.' },
+        ];
+      if (isLanding && t.includes('скрой') && t.includes('faq')) c.sections.faq = false;
+      if (isLanding && t.includes('покажи') && t.includes('faq')) c.sections.faq = true;
+      if (!isLanding && (t.includes('bright') || t.includes('bright lights')))
+        c.brand.name = 'Bright Lights';
+      if (!isLanding && t.includes('декор'))
+        c.categories.push({ id:'c'+Date.now(), name:'Декор', active:false });
       state.builder.busy = false;
       render();
     }, 700);
+  },
+
+  // Builder — services CRUD
+  addService: () => {
+    const idx = state.builder.config.services.length + 1;
+    state.builder.config.services.push({ id:'s'+Date.now(), name:`Услуга ${idx}`, price:'от 5 000 ₽', icon:null, desc:'Описание услуги' });
+    render();
+  },
+  removeService: (id) => { state.builder.config.services = state.builder.config.services.filter(s => s.id !== id); render(); },
+
+  // Builder — testimonials CRUD
+  addTestimonial: () => {
+    state.builder.config.testimonials.push({ id:'r'+Date.now(), author:'Клиент', role:'Отзыв', avatar:null, text:'Всё отлично.' });
+    render();
+  },
+  removeTestimonial: (id) => { state.builder.config.testimonials = state.builder.config.testimonials.filter(r => r.id !== id); render(); },
+
+  // Builder — FAQ CRUD
+  addFaq: () => { state.builder.config.faq.push({ id:'f'+Date.now(), q:'Вопрос', a:'Ответ' }); render(); },
+  removeFaq: (id) => { state.builder.config.faq = state.builder.config.faq.filter(f => f.id !== id); render(); },
+
+  // Builder — catalog categories/products
+  addCategory: () => { state.builder.catalog.categories.push({ id:'c'+Date.now(), name:'Новая категория', active:false }); render(); },
+  removeCategory: (id) => { state.builder.catalog.categories = state.builder.catalog.categories.filter(c => c.id !== id); render(); },
+  addProduct: () => { state.builder.catalog.products.push({ id:'p'+Date.now(), name:'Новый товар', price:0, image:null, category:'c1' }); render(); },
+  removeProduct: (id) => { state.builder.catalog.products = state.builder.catalog.products.filter(p => p.id !== id); render(); },
+
+  // Builder — image clear
+  clearImage: (path) => { setPath(state, path, null); render(); },
+
+  // Catalog preview interactions
+  catalogSetCategory: (id) => {
+    state.builder.catalog.categories.forEach(c => c.active = c.id === id);
+    render();
+  },
+  catalogAddToCart: (productId) => {
+    const cart = state.builder.catalog.cart;
+    const existing = cart.find(x => x.productId === productId);
+    if (existing) existing.qty++;
+    else cart.push({ productId, qty:1 });
+    render();
+  },
+  catalogCheckout: () => {
+    const total = state.builder.catalog.cart.reduce((sum, item) => {
+      const p = state.builder.catalog.products.find(x => x.id === item.productId);
+      return sum + (p ? p.price * item.qty : 0);
+    }, 0);
+    alert(`Заказ на ${fmt(total)} ₽ отправлен в amoCRM как новая сделка. В боевой версии — реально попадёт в CRM клиента.`);
+    state.audit.log.unshift({ id:'a'+Date.now(), who:'система', action:'create_lead', target:`Заказ из каталога: ${fmt(total)} ₽`, when:'только что', kind:'recipe' });
+    state.builder.catalog.cart = [];
+    render();
+  },
+
+  exportConfig: () => {
+    const cfg = state.builder.mode === 'landing' ? state.builder.config : state.builder.catalog;
+    const blob = new Blob([JSON.stringify(cfg, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `konvey-${state.builder.mode}-config.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  },
+
+  // Bot simulator
+  openBotSim: () => {
+    state.botSim = {
+      open: true,
+      messages: [],
+      currentNode: 'welcome',
+      scratch: {},
+    };
+    botSimEnterNode('welcome');
+    render();
+  },
+  closeBotSim: () => { state.botSim = null; render(); },
+  botSimClick: (goto) => { botSimEnterNode(goto); render(); },
+  botSimSend: () => {
+    const el = document.getElementById('botsim-input');
+    if (!el) return;
+    const text = el.value.trim();
+    if (!text) return;
+    const node = BOT_FLOW.nodes[state.botSim.currentNode];
+    if (node && node.kind === 'prompt') {
+      state.botSim.messages.push({ role:'user', text });
+      state.botSim.scratch[node.save_to] = text;
+      el.value = '';
+      render();
+      setTimeout(() => { botSimEnterNode(node.next); render(); }, 400);
+    }
   },
 
   // Marketplace
@@ -1621,30 +2174,199 @@ document.body.addEventListener('submit', (e) => {
   if (form) { e.preventDefault(); actions.sendChatMessage(); }
 });
 
-// Enter-to-send on chat textarea
+// Enter-to-send on chat textarea + bot simulator
 document.body.addEventListener('keydown', (e) => {
-  if (e.target && e.target.id === 'chat-input' && e.key === 'Enter' && !e.shiftKey) {
+  if (!e.target) return;
+  if (e.target.id === 'chat-input' && e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     actions.sendChatMessage();
+  } else if (e.target.id === 'botsim-input' && e.key === 'Enter') {
+    e.preventDefault();
+    actions.botSimSend();
   }
 });
 
 // Input bindings — update state WITHOUT full re-render (preserves focus/caret)
 document.body.addEventListener('input', (e) => {
+  // File upload
+  const fileEl = e.target.closest('input[type="file"][data-upload]');
+  if (fileEl && fileEl.files && fileEl.files[0]) {
+    handleImageUpload(fileEl.files[0], fileEl.dataset.upload, fileEl.dataset.variant || 'square');
+    return;
+  }
+  // Checkbox toggle
+  const toggleEl = e.target.closest('input[type="checkbox"][data-toggle]');
+  if (toggleEl) {
+    setPath(state, toggleEl.dataset.toggle, toggleEl.checked);
+    saveState();
+    refreshPreview();
+    return;
+  }
+  // Text bindings
   const el = e.target.closest('[data-bind]');
   if (!el) return;
   const path = el.dataset.bind;
-  const parts = path.split('.');
-  let cur = state;
-  for (let i = 0; i < parts.length - 1; i++) cur = cur[parts[i]];
-  cur[parts[parts.length - 1]] = el.value;
+  const value = el.type === 'number' ? Number(el.value) : el.value;
+  setPath(state, path, value);
   saveState();
-  // For builder — refresh preview only
-  const preview = document.getElementById('preview-panel');
-  if (preview && path.startsWith('builder.config.')) {
-    preview.innerHTML = renderPreviewCard();
-  }
+  refreshPreview();
 });
+
+function refreshPreview() {
+  const preview = document.getElementById('preview-panel');
+  if (!preview) return;
+  preview.innerHTML = state.builder.mode === 'landing' ? renderLandingPreview() : renderCatalogPreview();
+}
+
+async function handleImageUpload(file, path, variant) {
+  const preset = IMG_PRESETS[variant] || IMG_PRESETS.square;
+  try {
+    const dataUrl = await compressImage(file, { maxDim: preset.maxDim, quality: preset.quality });
+    setPath(state, path, dataUrl);
+    saveState();
+    render();
+  } catch (err) {
+    alert('Ошибка загрузки: ' + err.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BOT SIMULATOR — Telegram-like phone mockup with real flow interpreter
+// ═══════════════════════════════════════════════════════════════════════════
+const BOT_FLOW = {
+  entry: 'welcome',
+  nodes: {
+    welcome: {
+      kind: 'message',
+      text: (s) => `Здравствуйте! Вас приветствует ${state.builder.config.brand.name}. Чем можем помочь?`,
+      buttons: [
+        { text:'Оставить заявку',  goto:'ask_name' },
+        { text:'Услуги и цены',    goto:'services' },
+        { text:'Контакты',         goto:'contacts' },
+      ],
+    },
+    services: {
+      kind: 'message',
+      text: () => 'Наши услуги:\n' + state.builder.config.services.map(s => `• ${s.name} — ${s.price}`).join('\n'),
+      buttons: [{ text:'← Назад', goto:'welcome' }],
+    },
+    contacts: {
+      kind: 'message',
+      text: () => `${state.builder.config.contacts.address}\n☎ ${state.builder.config.contacts.phone}\n✉ ${state.builder.config.contacts.email}`,
+      buttons: [{ text:'← Назад', goto:'welcome' }],
+    },
+    ask_name: { kind: 'prompt', save_to:'name',  text:'Как вас зовут?',    next:'ask_phone' },
+    ask_phone:{ kind: 'prompt', save_to:'phone', text:'Ваш телефон?',      next:'ask_service' },
+    ask_service: {
+      kind: 'message',
+      text: () => 'Какая услуга вас интересует?',
+      buttons: () => state.builder.config.services.map(s => ({ text:s.name, goto:'create_lead', pick:s.name })),
+    },
+    create_lead: {
+      kind: 'action',
+      run: (session) => {
+        const audit = {
+          id:'a'+Date.now(), who:'bot',
+          action:'create_lead',
+          target:`Заявка из TG-бота: ${session.name || '—'} · ${session.phone || '—'} · ${session.service || '—'}`,
+          when:'только что', kind:'recipe',
+        };
+        state.audit.log.unshift(audit);
+        saveState();
+      },
+      next: 'done',
+    },
+    done: {
+      kind: 'message',
+      text: (s) => `Спасибо, ${s.name || 'друг'}! Ваша заявка отправлена. Мы свяжемся с вами в течение 30 минут.\n\n(Сделка появилась в amoCRM — открой Журнал, чтобы увидеть)`,
+      buttons: [{ text:'Начать заново', goto:'welcome' }],
+    },
+  },
+};
+
+function botSimEnterNode(id) {
+  const node = BOT_FLOW.nodes[id];
+  if (!node) return;
+  state.botSim.currentNode = id;
+
+  if (node.kind === 'action') {
+    node.run(state.botSim.scratch);
+    setTimeout(() => { botSimEnterNode(node.next); render(); }, 300);
+    return;
+  }
+  const text = typeof node.text === 'function' ? node.text(state.botSim.scratch) : node.text;
+  const buttons = typeof node.buttons === 'function' ? node.buttons(state.botSim.scratch) : (node.buttons || []);
+  state.botSim.messages.push({ role:'bot', text, buttons });
+  if (node.kind === 'prompt') {
+    // Wait for user input via textbox
+  }
+}
+
+// Register clicks on picker-buttons (with pick payload)
+actions.botSimPick = (goto, e) => {
+  const btn = e.target.closest('[data-arg]');
+  const pick = btn ? btn.dataset.pick : null;
+  if (pick) {
+    state.botSim.messages.push({ role:'user', text: pick });
+    state.botSim.scratch.service = pick;
+  } else {
+    const label = btn ? btn.textContent.trim() : '';
+    state.botSim.messages.push({ role:'user', text: label });
+  }
+  setTimeout(() => { botSimEnterNode(goto); render(); }, 300);
+  render();
+};
+
+function renderBotSimModal() {
+  if (!state.botSim || !state.botSim.open) return '';
+  const brand = state.builder.config.brand.primaryColor;
+  const currentNode = BOT_FLOW.nodes[state.botSim.currentNode];
+  const isPrompt = currentNode && currentNode.kind === 'prompt';
+
+  return `<div class="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div class="absolute inset-0 bg-ink-950/85 backdrop-blur-sm" data-action="closeBotSim"></div>
+    <div class="relative bg-ink-900 border border-ink-700 rounded-3xl shadow-2xl overflow-hidden animate-slide-up flex" style="width:420px">
+      <div class="flex-1 rounded-[36px] bg-black p-2 m-1" style="width:400px">
+        <div class="rounded-[28px] bg-[#17212B] overflow-hidden flex flex-col" style="height:720px">
+          <!-- Status bar -->
+          <div class="h-8 flex items-center justify-between px-6 text-[10px] font-semibold text-white/80">
+            <span>9:41</span>
+            <span>●●● 100%</span>
+          </div>
+          <!-- Bot header (TG style) -->
+          <div class="px-4 py-2 flex items-center gap-3 bg-[#242F3D]">
+            <button data-action="closeBotSim" class="text-white/70">${I.chevR(20).replace('<svg','<svg style="transform:rotate(180deg)"')}</button>
+            <div class="h-9 w-9 rounded-full flex items-center justify-center text-white font-bold" style="background:${brand}">${esc(state.builder.config.brand.name[0])}</div>
+            <div class="flex-1">
+              <div class="font-semibold text-white text-sm">${esc(state.builder.config.brand.name)} bot</div>
+              <div class="text-[11px] text-emerald-400">онлайн</div>
+            </div>
+          </div>
+          <!-- Messages -->
+          <div id="botsim-scroll" class="flex-1 overflow-auto p-3 space-y-2" style="background:#0E1621;background-image:radial-gradient(rgba(255,255,255,.02) 1px, transparent 1px);background-size:20px 20px">
+            ${state.botSim.messages.map((m, i) => {
+              if (m.role === 'bot') return `
+                <div class="flex flex-col items-start gap-1 animate-slide-up">
+                  <div class="max-w-[80%] px-3 py-2 rounded-2xl rounded-tl-md bg-[#182533] text-white text-sm whitespace-pre-line">${esc(m.text)}</div>
+                  ${m.buttons && m.buttons.length && i === state.botSim.messages.length - 1 ? `<div class="flex flex-wrap gap-1.5 mt-1">
+                    ${m.buttons.map(b => `<button data-action="${b.pick?'botSimPick':'botSimClick'}" data-arg="${esc(b.goto)}" ${b.pick?`data-pick="${esc(b.pick)}"`:''} class="px-3 py-1.5 rounded-full text-xs font-medium border border-white/10 bg-white/5 hover:bg-white/10 text-white/90">${esc(b.text)}</button>`).join('')}
+                  </div>` : ''}
+                </div>`;
+              return `<div class="flex justify-end animate-slide-up">
+                <div class="max-w-[80%] px-3 py-2 rounded-2xl rounded-tr-md text-white text-sm" style="background:${brand}">${esc(m.text)}</div>
+              </div>`;
+            }).join('')}
+          </div>
+          <!-- Input area -->
+          <div class="p-2 border-t border-white/5 bg-[#17212B] flex gap-2 items-center">
+            <input id="botsim-input" placeholder="${isPrompt ? 'Ответьте здесь...' : 'Выберите вариант выше'}" ${isPrompt?'':'disabled'} class="flex-1 bg-[#242F3D] rounded-full px-4 py-2 text-sm text-white outline-none focus:ring-1 focus:ring-white/20 disabled:opacity-50 placeholder:text-white/40">
+            <button data-action="botSimSend" ${isPrompt?'':'disabled'} class="h-9 w-9 rounded-full flex items-center justify-center text-white disabled:opacity-30" style="background:${brand}">${I.send(14)}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  BOOT
